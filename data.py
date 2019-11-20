@@ -1,0 +1,2 @@
+SCORES = {}
+POSTS = {}
