@@ -1,6 +1,7 @@
 import convokit
+from data import *
 
-def extract_convos(corpus):
+def store_data(corpus,t):
     ranks = []
     for convo in corpus.iter_conversations():
         d = {}
@@ -13,4 +14,9 @@ def extract_convos(corpus):
         d['leaf'] = com
         d['score'] = score
         ranks.append(d)
-    return sorted(ranks, key=lambda d: d['score'],reverse=True)
+    ranks = sorted(ranks, key=lambda d: d['score'],reverse=True)
+    for i in range(len(ranks)):
+        d = ranks[i]
+        POSTS[t][d['leaf'].submission.id][d['leaf'].id] = i
+        
+    SCORES[t] = ranks
