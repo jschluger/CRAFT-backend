@@ -1,2 +1,4 @@
+from collections import defaultdict
+
 SCORES = {}
-POSTS = {}
+POSTS = defaultdict(lambda: defaultdict(dict))

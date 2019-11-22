@@ -1,5 +1,6 @@
 import convokit
 from data import *
+from collections import defaultdict
 
 def store_data(corpus,t):
     ranks = []
@@ -15,8 +16,11 @@ def store_data(corpus,t):
         d['score'] = score
         ranks.append(d)
     ranks = sorted(ranks, key=lambda d: d['score'],reverse=True)
+
     for i in range(len(ranks)):
         d = ranks[i]
-        POSTS[t][d['leaf'].submission.id][d['leaf'].id] = i
+        post = d['leaf'].submission.id
+        com = d['leaf'].id
+        POSTS[post][t][d['leaf'].id] = i
         
     SCORES[t] = ranks

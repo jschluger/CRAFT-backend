@@ -506,14 +506,21 @@ attack_clf_cmv.eval()
 # Initialize the pipeline
 predictor_cmv = Predictor(encoder_cmv, context_encoder_cmv, attack_clf_cmv)
 
-def rank_convos(corpus):
-    test_pairs_cmv = loadPairs(voc_cmv, corpus, None)
-    random.seed(2019)
-    forecasts_df_cmv = evaluateDataset(test_pairs_cmv, encoder_cmv, context_encoder_cmv, predictor_cmv, voc_cmv, batch_size, device)
+def rank_convos(corpus,run_craft=True):
+    if run_craft:
+        test_pairs_cmv = loadPairs(voc_cmv, corpus, None)
+        random.seed(2019)
+        forecasts_df_cmv = evaluateDataset(test_pairs_cmv, encoder_cmv, context_encoder_cmv, predictor_cmv, voc_cmv, batch_size, device)
 
-    for convo in corpus.iter_conversations():
-        for utt in convo.iter_utterances():
-            if utt.id in forecasts_df_cmv.index:
-                utt.meta['forecast_score_cmv'] = forecasts_df_cmv.loc[utt.id].score
-                # print(f'annotating utt {utt}')
+        for convo in corpus.iter_conversations():
+            for utt in convo.iter_utterances():
+                if utt.id in forecasts_df_cmv.index:
+                    utt.meta['forecast_score_cmv'] = forecasts_df_cmv.loc[utt.id].score
+    else:
+        c = 0.
+        for convo in corpus.iter_conversations():
+            for utt in convo.iter_utterances():
+                utt.meta['forecast_score_cmv'] = c
+                c += 1.
+                    
     return corpus
