@@ -3,6 +3,10 @@ from data import *
 from collections import defaultdict
 
 def store_data(corpus,t):
+    """
+    Given a CRAFT-labeled corpus <corpus> and a time <t>, update data structures <SCORES> and <POSTS>
+    to store the CRAFT predictions. 
+    """
     ranks = []
     for convo in corpus.iter_conversations():
         d = {}

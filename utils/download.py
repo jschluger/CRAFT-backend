@@ -2,11 +2,18 @@ import praw
 import convokit
 from convokit import Utterance, Conversation, Corpus, User
 
+# get a praw reddit object
 reddit = praw.Reddit(client_id='sq6GgQR_4lri7A',
                      client_secret='dWes213OfQWpF7eCVxeImaHSbiw',
                      user_agent='jack')
- 
+
+
 def get_convos(post):
+    """
+    Get a list of conversations taking place on post <post>, where each conversation
+    is represented as a list of comment objects
+    """
+    
     post.comments.replace_more(limit=0)
     saveto = []
     for comment in post.comments:
@@ -14,6 +21,9 @@ def get_convos(post):
     return sorted(saveto, key=lambda clist: clist[0].score)
  
 def get_convos_itt(comment, saveto, acc):
+    """
+    Iterative helper function for get_convos
+    """
     acc.append(comment)
     if len(comment.replies) == 0:
         saveto.append(acc)
@@ -22,6 +32,9 @@ def get_convos_itt(comment, saveto, acc):
             get_convos_itt(reply,saveto,acc[:])
 
 def add_convos(clist,corpus=None):
+    """
+    Add the conversations <clist> (given in the form returned by <get_convos>) to corpus <corpus>
+    """
     utts = []
     users = {}
     i = 0 if corpus==None else len(corpus.utterances)
@@ -41,17 +54,16 @@ def add_convos(clist,corpus=None):
             i += 1
         utts.extend(c_utts)
     if corpus is None:
-        # print(f"making new corpus with {len(utts)} utterances")
         return Corpus(utterances=utts)
     else:
-        # print(f"extending corpus by {len(utts)} utterances")
-        # print(f'corpus has {len(corpus.utterances)} utterance before extending')
         corpus = corpus.add_utterances(utts)
-        # print(f'corpus has {len(corpus.utterances)} utterance after extending')
-        
         return corpus
 
 def build_corpus(sub=reddit.subreddit('changemyview'), n=1):
+    """
+    Build a corpus from subreddit <sub> from the conversations taking place in the comments
+    of the current top <n> hotest posts on the subreddit. 
+    """
     corpus = None
     for post in sub.hot(limit=n):
         corpus = add_convos(get_convos(post),corpus=corpus)

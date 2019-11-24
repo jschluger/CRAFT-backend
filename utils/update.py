@@ -3,10 +3,12 @@ import time
 from utils import download, process, craft
 from data import *
 from pprint import pprint
-
 from collections import defaultdict
 
 def update():
+    """
+    Download data from reddit, run craft on it, update the data structures with the rankings
+    """
     t = int(time.time())
     print(f'==> update at time {t} ...')
 
@@ -17,6 +19,9 @@ def update():
     check_data()
     
 def setup():
+    """
+    Set <update> to run at regular intervals
+    """
     print('setting up updates')
     scheduler = BackgroundScheduler()
     scheduler.add_job(func=update, trigger='cron', second='*/5')
@@ -27,8 +32,11 @@ def setup():
     # print(f'POSTS = {POSTS}')
 
 def check_data():
-    # pprint(POSTS)
-    # print('^posts')
+    """
+    Assert the integrity of the data structures. Specificly, assert that all pointers of 
+    the form <i = POSTS[pid][t][cic]> all point to the score
+    <SCORES[t][i]> that cooresponds to the right leaf comment <cid>
+    """
     for pid,times in POSTS.items():
         for t,upt in times.items():
             for com,i in sorted(upt.items(), key=lambda t:t[1]):
