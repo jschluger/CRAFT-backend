@@ -65,6 +65,6 @@ def build_corpus(sub=reddit.subreddit('changemyview'), n=1):
     of the current top <n> hotest posts on the subreddit. 
     """
     corpus = None
-    for post in sub.new(limit=n):
+    for post in sub.hot(limit=n):
         corpus = add_convos(get_convos(post),corpus=corpus)
     return corpus

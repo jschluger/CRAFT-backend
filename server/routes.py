@@ -91,7 +91,7 @@ def viewtop():
     return vt_response(k,t)
 
 
-@routes.route("/viewtimes", methods=['GET','POST'])
+@routes.route("/viewtimes", methods=['POST'])
 def viewtimes():
     """
     Route to handle viewtimes

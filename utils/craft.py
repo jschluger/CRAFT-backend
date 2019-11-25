@@ -432,6 +432,7 @@ def evaluateDataset(dataset, encoder, context_encoder, predictor, voc, batch_siz
         "prediction": [],
         "score": []
     }
+    print(f'... running craft on {len(dataset)} conversations')
     for iteration in range(1, n_iters+1):
         batch, batch_dialogs, _, true_batch_size = next(batch_iterator)
         # Extract fields from batch
@@ -452,7 +453,7 @@ def evaluateDataset(dataset, encoder, context_encoder, predictor, voc, batch_siz
                 output_df["prediction"].append(pred)
                 output_df["score"].append(score)
                 
-        print("Iteration: {}; Percent complete: {:.1f}%".format(iteration, iteration / n_iters * 100))
+        # print("Iteration: {}; Percent complete: {:.1f}%".format(iteration, iteration / n_iters * 100))
 
     return pd.DataFrame(output_df).set_index("id")
 
