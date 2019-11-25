@@ -1,14 +1,12 @@
 from flask import Blueprint, request
-from data import *
-import time
-import json
+import time, json, data
 
 
 routes = Blueprint('routes', __name__)
 
 def format_score(scoreobj):
     """ 
-    Formats an element of a list stored at SCORES[t] to be sent to a client
+    Formats an element of a list stored at data.SCORES[t] to be sent to a client
 
     :param scoreobj: dict of form
                       {'leaf': praw obj of leaf comment in conversation
@@ -46,7 +44,8 @@ def vt_response(k,t):
              conversations to derail as predicted during the update taking place
              at the latest time before <t>
     """
-    times = sorted(SCORES.keys())
+    times = sorted(data.SCORES.keys())
+    # print(f'times is {times}')
     if len(times) == 0:
         return vt_json()
 
@@ -62,8 +61,13 @@ def vt_response(k,t):
                 break
         out_t = times[i-1 if i > 0 else 0]
 
-
-    return vt_json(when= out_t, ranking= list(map(format_score, SCORES[out_t][:k])) )
+    # if k == -1, return all scores, otherwise return the first k
+    if k == -1:
+        ranks = list(map(format_score, data.SCORES[out_t]))
+    else:
+        ranks = list(map(format_score, data.SCORES[out_t][:k]))
+        
+    return vt_json(when= out_t, ranking= ranks)
 
 @routes.route("/viewtop", methods=['POST'])
 def viewtop():
@@ -80,7 +84,19 @@ def viewtop():
             k = int(request.values['k'])
         if 't' in request.values:
             t = int(request.values['t'])
-    except:
+    except Exception as e:
+        print(f'Recieved error <{e}> while parsing args to viewtop request')
         return vt_json() # empty response
     
     return vt_response(k,t)
+
+
+@routes.route("/viewtimes", methods=['GET','POST'])
+def viewtimes():
+    """
+    Route to handle viewtimes
+    """
+    times = list(data.SCORES.keys())
+    return json.dumps({'times':times})
+
+

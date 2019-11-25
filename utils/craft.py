@@ -443,13 +443,14 @@ def evaluateDataset(dataset, encoder, context_encoder, predictor, voc, batch_siz
                                             true_batch_size, device)
 
         # format the output as a dataframe (which we can later re-join with the corpus)
-        for i in range(true_batch_size):
-            convo_id = convo_ids[i]
-            pred = predictions[i].item()
-            score = scores[i].item()
-            output_df["id"].append(convo_id)
-            output_df["prediction"].append(pred)
-            output_df["score"].append(score)
+        if true_batch_size > 0:
+            for i in range(true_batch_size):
+                convo_id = convo_ids[i]
+                pred = predictions[i].item()
+                score = scores[i].item()
+                output_df["id"].append(convo_id)
+                output_df["prediction"].append(pred)
+                output_df["score"].append(score)
                 
         print("Iteration: {}; Percent complete: {:.1f}%".format(iteration, iteration / n_iters * 100))
 
