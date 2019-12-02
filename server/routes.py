@@ -1,4 +1,4 @@
-from flask import Blueprint, request
+from flask import Blueprint, request, Response
 import time, json, data
 
 
@@ -18,21 +18,25 @@ def format_score(scoreobj):
     return (scoreobj['score'],link)
 
 
-def vt_json(when=-1, ranking=None):
+def format_vt_response(when=-1, ranking=None):
     """
-    Formats a json response to a viewtop request
+    Formats a response to a viewtop request
     
     :param when: time of the update
     :param ranking: list of (predicted score, link to leaf comment) tuples 
 
     :return: json for a viewtop request
     """    
-    return json.dumps(
+    js = json.dumps(
         {
             'when': when,
             'ranking': ranking
         })
-
+    resp = Response(js)
+    resp.headers['Access-Control-Allow-Origin'] = '*'
+    return resp
+    
+    
 def vt_response(k,t):
     """
     Responds to a viewtop request
@@ -47,7 +51,7 @@ def vt_response(k,t):
     times = sorted(data.SCORES.keys())
     # print(f'times is {times}')
     if len(times) == 0:
-        return vt_json()
+        return format_vt_response()
 
     # find out_t as latest update time before t    
     out_t = 0
@@ -67,7 +71,7 @@ def vt_response(k,t):
     else:
         ranks = list(map(format_score, data.SCORES[out_t][:k]))
         
-    return vt_json(when= out_t, ranking= ranks)
+    return format_vt_response(when= out_t, ranking= ranks)
 
 @routes.route("/viewtop", methods=['POST'])
 def viewtop():
@@ -86,7 +90,7 @@ def viewtop():
             t = int(request.values['t'])
     except Exception as e:
         print(f'Recieved error <{e}> while parsing args to viewtop request')
-        return vt_json() # empty response
+        return format_vt_response() # empty response
     
     return vt_response(k,t)
 
@@ -97,6 +101,10 @@ def viewtimes():
     Route to handle viewtimes
     """
     times = list(data.SCORES.keys())
-    return json.dumps({'times':times})
+    js = json.dumps({'times':times})
+    resp = Response(js)
+    resp.headers['Access-Control-Allow-Origin'] = '*'
+    return resp
+                        
 
 
