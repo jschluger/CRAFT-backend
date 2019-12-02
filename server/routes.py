@@ -33,7 +33,7 @@ def format_vt_response(when=-1, ranking=None):
             'ranking': ranking
         })
     resp = Response(js)
-    resp.headers['Access-Control-Allow-Origin'] = '*'
+    # resp.headers['Access-Control-Allow-Origin'] = '*'
     return resp
     
     
@@ -103,7 +103,7 @@ def viewtimes():
     times = list(data.SCORES.keys())
     js = json.dumps({'times':times})
     resp = Response(js)
-    resp.headers['Access-Control-Allow-Origin'] = '*'
+    # resp.headers['Access-Control-Allow-Origin'] = '*'
     return resp
                         
 
