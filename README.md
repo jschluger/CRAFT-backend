@@ -1,6 +1,3 @@
 # CRAFT-backend
 
-Run by running `$ python run.py` on the command line.
-
-If you stopped the server and want to restart the server with the same data, run `$ python run.py --start_from_backup`.
-
+Check out the documentation in the wiki for this github repository, which you can find [here](https://github.com/jschluger/CRAFT-backend/wiki/Documentation)
