@@ -33,11 +33,10 @@ def format_vt_response(when=-1, ranking=None):
             'ranking': ranking
         })
     resp = Response(js)
-    # resp.headers['Access-Control-Allow-Origin'] = '*'
     return resp
     
     
-def vt_response(k,t):
+def vt_response(k,t, err=False):
     """
     Responds to a viewtop request
 
@@ -48,6 +47,9 @@ def vt_response(k,t):
              conversations to derail as predicted during the update taking place
              at the latest time before <t>
     """
+    if err=True:
+        return format_vt_response()
+    
     times = sorted(data.SCORES.keys())
     # print(f'times is {times}')
     if len(times) == 0:
@@ -90,7 +92,7 @@ def viewtop():
             t = int(request.values['t'])
     except Exception as e:
         print(f'Recieved error <{e}> while parsing args to viewtop request')
-        return format_vt_response() # empty response
+        return vt_response(err=True) # empty response
     
     return vt_response(k,t)
 
@@ -103,8 +105,57 @@ def viewtimes():
     times = list(data.SCORES.keys())
     js = json.dumps({'times':times})
     resp = Response(js)
-    # resp.headers['Access-Control-Allow-Origin'] = '*'
     return resp
+
+
+def format_vc_response(i=-1, parent=None, children=None, data=None)
+    """
+    Formats a response to a viewtop request
+    
+    :param i:
+    ...
+
+    :return: json for a viewtop request
+    """    
+    js = json.dumps(
+        {
+            'id': i,
+            'parent': parent,
+            'children': children,
+            'data': data
+        })
+    resp = Response(js)
+    return resp
+
+def vc_response(i, err=False):
+    """
+    Responds to a viewconvo request
+
+    :param i: id of convo to return
+    
+    :return: a correctly formated json response for convo <i>
+    """
+    if err=True:
+        return format_vc_response()
+    
+
+
+@routes.route("/viewconvo", methods=['POST'])
+def viewconvo():
+    """
+    Route to handle viewconvo
+    """
+    # Default args
+    
+    # Get args from request
+    try:
+        if 'id' in request.values:
+            i = int(request.values['id'])
+    except Exception as e:
+        print(f'Recieved error <{e}> while parsing args to viewconvo request')
+        return vc_response(err=True) # empty response
+    
+    return vc_response(i)
                         
 
 
