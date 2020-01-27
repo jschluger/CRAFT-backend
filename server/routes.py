@@ -47,7 +47,7 @@ def vt_response(k,t, err=False):
              conversations to derail as predicted during the update taking place
              at the latest time before <t>
     """
-    if err=True:
+    if err==True:
         return format_vt_response()
     
     times = sorted(data.SCORES.keys())
@@ -108,7 +108,7 @@ def viewtimes():
     return resp
 
 
-def format_vc_response(i=-1, parent=None, children=None, data=None)
+def format_vc_response(i=-1, parent=None, children=None, data=None):
     """
     Formats a response to a viewtop request
     
@@ -135,7 +135,7 @@ def vc_response(i, err=False):
     
     :return: a correctly formated json response for convo <i>
     """
-    if err=True:
+    if err==True:
         return format_vc_response()
     
 

@@ -1,11 +1,10 @@
 import praw
 import convokit
 from convokit import Utterance, Conversation, Corpus, User
+from pprint import pprint
+import data
 
 # get a praw reddit object
-reddit = praw.Reddit(client_id='sq6GgQR_4lri7A',
-                     client_secret='dWes213OfQWpF7eCVxeImaHSbiw',
-                     user_agent='jack')
 
 
 def get_convos(post):
@@ -59,12 +58,28 @@ def add_convos(clist,corpus=None):
         corpus = corpus.add_utterances(utts)
         return corpus
 
-def build_corpus(sub=reddit.subreddit('changemyview'), n=1):
+def build_corpus(sub=data.reddit.subreddit('changemyview'), n=1):
     """
     Build a corpus from subreddit <sub> from the conversations taking place in the comments
     of the current top <n> hotest posts on the subreddit. 
     """
+    if len(data.ACTIVE)==0:
+        return None
+
     corpus = None
-    for post in sub.hot(limit=n):
-        corpus = add_convos(get_convos(post),corpus=corpus)
+    for post_id, D in data.ACTIVE.items():
+        corpus = add_convos(get_convos(D['post']),corpus=corpus)
+        D['num_comments'].append(D['post'].num_comments)
+        
+    maintain_active()
     return corpus
+
+def maintain_active():
+    print(f'maintaing active:')
+    pprint(data.ACTIVE)
+    for post_id, D in data.ACTIVE.items():
+        if len(D['num_comments']) >= 3 and \
+           D['num_comments'][-1] == D['num_comments'][-2] and \
+           D['num_comments'][-1] == D['num_comments'][-2]:
+            del data.ACTIVE[post_id]
+            print(f'{post_id} has not changed for the past 3 updates, removing')

@@ -1,3 +1,5 @@
+from convokit import Corpus, Utterance, User
+import praw
 ##################################################################
 # Set these variables to configure the behavior of the application
 ################################################################## 
@@ -13,16 +15,24 @@ run_craft = True
 # Uncomment the line you want! 
 # update_cron = {'second': '*/20' } # update at each time where the number of seconds is divisable by 20
 # update_cron = {'second': 0} # update at the top of each minute
-update_cron = {'minute': 0} # update at the top of each hour
-# update_cron = {'minute': '*/20'} # update at the top of each minute where the number of minutes in the time is divisible by 20
+# update_cron = {'minute': 56} # update at the top of each hour
+update_cron = {'minute': '*/3'} # update at the top of each minute where the number of minutes in the time is divisible by 20
 
 ##############################################################
 # data & data structures needed for application, Do Not Modify
 ##############################################################
 SCORES = {}
 POSTS  = {}
+ACTIVE = {}
+
+CORPUS = None
 
 SCORES_f = 'data/scores.pkl'
 POSTS_f  = 'data/posts.pkl'
+
+reddit = praw.Reddit(client_id='sq6GgQR_4lri7A',
+                     client_secret='dWes213OfQWpF7eCVxeImaHSbiw',
+                     user_agent='jack')
+
 
 args = None # will become the command line arguments

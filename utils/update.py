@@ -1,9 +1,9 @@
 from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import datetime
-from utils import download, craft
+from utils import download, craft, live_download
 from pprint import pprint
 import time, convokit, pickle, os.path, data
-
+import threading
 
 def update():
     """
@@ -13,10 +13,21 @@ def update():
     print(f'==> update at time {t} ({datetime.utcfromtimestamp(t).strftime("%Y-%m-%d %H:%M:%S")} UTC)...')
 
     corpus = download.build_corpus(n=data.p)
+    if corpus==None:
+        return
     corpus = craft.rank_convos(corpus,run_craft=data.run_craft)
     store_data(corpus,t)
     check_data()
     backup_data(t)
+
+def update_2():
+    t = int(time.time())
+    print(f'==> update at time {t} ({datetime.utcfromtimestamp(t).strftime("%Y-%m-%d %H:%M:%S")} UTC)...')
+    craft.rank_convos(data.CORPUS, run_craft=data.run_craft)
+    store_data(data.CORPUS,t)
+    check_data()
+    backup_data(t)
+
     
 def setup():
     """
@@ -24,7 +35,8 @@ def setup():
     """
     print('setting up updates')
     scheduler = BackgroundScheduler()
-    scheduler.add_job(func=update, trigger='cron', **data.update_cron)
+    # scheduler.add_job(func=update, trigger='cron', **data.update_cron)
+    scheduler.add_job(func=update_2, trigger='cron', **data.update_cron)
     scheduler.start()
     if data.args.start_from_backup:
         load_backup()
@@ -37,7 +49,22 @@ def setup():
               f' files {data.SCORES_f} and {data.POSTS_f} to start from scratch.\n'
                '--------------------------ERROR---------------------------------')
         exit(1)
+    live_download.maintain_corpus()
+    # print(f'data.ACTIVE initialized to {data.ACTIVE}')
 
+def setup_active():
+    for post in data.reddit.subreddit('changemyview').hot(limit=5):
+        data.ACTIVE[post.id] = {"post": post,
+                                "num_comments": [post.num_comments]}
+    return 
+    def background():
+        for post in data.reddit.subreddit('changemyview').stream.submissions(skip_exsiting=True):
+            print(f'adding {post} to active with {post.num_comments} comments')
+            data.ACTIVE[post.id] = {"post": post,
+                                    "num_comments": [post.num_comments]}
+    thread = threading.Thread(target=background, args=())
+    thread.daemon = True
+    thread.start()
     
 def store_data(corpus,t):
     """
