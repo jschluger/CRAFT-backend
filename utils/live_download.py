@@ -12,17 +12,17 @@ def maintain_corpus():
             add_comment(comment)
             # show_corpus()
             c += 1
-            print(f'incoming comment # {c}\n')
+            print(f'adding leaf comment # {c}; {len(list(data.CORPUS.iter_conversations()))} conversations happening accross {len(data.CORPUS.utterances)} utterances')
                                     
     thread = threading.Thread(target=background, args=())
     thread.daemon = True
     thread.start()
 
 def add_comment(comment):
-    print(f'want to add {comment} to corpus')
+    # print(f'want to add {comment} to corpus')
     # first, check if we need to add the parent
     p = comment.parent_id.split('_')
-    print(f'parent id is {p}')
+    # print(f'parent id is {p}')
     if p[0] == 't1' and (data.CORPUS == None or p[1] not in data.CORPUS.utterances):
         parent_comment = praw.models.Comment(reddit=data.reddit, id=p[1])
         add_comment(parent_comment)

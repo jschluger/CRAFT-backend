@@ -432,7 +432,7 @@ def evaluateDataset(dataset, encoder, context_encoder, predictor, voc, batch_siz
         "prediction": [],
         "score": []
     }
-    print(f'... running craft on {len(dataset)} conversations')
+    print(f'... running craft on {len(dataset)} sub-conversations')
     for iteration in range(1, n_iters+1):
         batch, batch_dialogs, _, true_batch_size = next(batch_iterator)
         # Extract fields from batch
@@ -509,15 +509,20 @@ attack_clf_cmv.eval()
 predictor_cmv = Predictor(encoder_cmv, context_encoder_cmv, attack_clf_cmv)
 
 def rank_convos(corpus,run_craft=True):
+    print(f'corpus has {len(list(corpus.iter_conversations()))} conversations happening accross {len(corpus.utterances)} utterances')
     if run_craft:
         test_pairs_cmv = loadPairs(voc_cmv, corpus, None)
         random.seed(2019)
         forecasts_df_cmv = evaluateDataset(test_pairs_cmv, encoder_cmv, context_encoder_cmv, predictor_cmv, voc_cmv, batch_size, device)
 
+        print('merging results back into corpus')
         for convo in corpus.iter_conversations():
             for utt in convo.iter_utterances():
                 if utt.id in forecasts_df_cmv.index:
                     utt.meta['forecast_score_cmv'] = forecasts_df_cmv.loc[utt.id].score
+                else:
+                    # print(f'did not rank utterance {utt.id}')
+                    pass
     else:
         c = 0.
         for convo in corpus.iter_conversations():
