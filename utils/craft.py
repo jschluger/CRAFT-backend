@@ -151,8 +151,7 @@ def processDialog(voc, dialog):
         for i in range(len(tokens)):
             if tokens[i] not in voc.word2index:
                 tokens[i] = "UNK"
-        # processed.append({"tokens": tokens, "is_attack": int(dialog.meta['has_removed_comment']), "id": utterance.id})
-        processed.append({"tokens": tokens, "is_attack": 0, "id": utterance.id})
+        processed.append({"tokens": tokens, "is_attack": 0, "id": utterance.id, "scored": 'forecast_score_cmv' in utterance.meta})
     return processed
 
 # Load context-reply pairs from the Corpus, optionally filtering to only conversations
@@ -176,6 +175,8 @@ def loadPairs(voc, corpus, split=None):
             # comment_id = dialog[-1]["id"]
             # pairs.append((context,"",label, comment_id)) 
             for idx in range(1, len(dialog)):
+                if dialog[idx]['scored']:
+                    continue
                 reply = dialog[idx]["tokens"][:(MAX_LENGTH-1)]
                 label = dialog[idx]["is_attack"]
                 comment_id = dialog[idx]["id"]
@@ -432,7 +433,7 @@ def evaluateDataset(dataset, encoder, context_encoder, predictor, voc, batch_siz
         "prediction": [],
         "score": []
     }
-    print(f'... running craft on {len(dataset)} sub-conversations')
+    print(f'... running craft on {len(dataset)} new sub-conversations')
     for iteration in range(1, n_iters+1):
         batch, batch_dialogs, _, true_batch_size = next(batch_iterator)
         # Extract fields from batch

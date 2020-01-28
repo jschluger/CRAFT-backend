@@ -15,7 +15,7 @@ def format_score(scoreobj):
     :return: (predicted score, link to leaf comment) tuple
     """
     link = f'http://reddit.com{scoreobj["leaf"].permalink}'
-    return (scoreobj['score'],link)
+    return (scoreobj['score'], scoreobj['leaf'].id)
 
 
 def format_vt_response(when=-1, ranking=None):
@@ -108,7 +108,7 @@ def viewtimes():
     return resp
 
 
-def format_vc_response(i=-1, parent=None, children=None, data=None):
+def format_vc_response(i=-1, parent=None, children=[], data=None):
     """
     Formats a response to a viewtop request
     
@@ -127,7 +127,7 @@ def format_vc_response(i=-1, parent=None, children=None, data=None):
     resp = Response(js)
     return resp
 
-def vc_response(i, err=False):
+def vc_response(i=-1, err=False):
     """
     Responds to a viewconvo request
 
@@ -137,6 +137,8 @@ def vc_response(i, err=False):
     """
     if err==True:
         return format_vc_response()
+
+    return format_vc_response(i=i)
     
 
 
@@ -150,12 +152,12 @@ def viewconvo():
     # Get args from request
     try:
         if 'id' in request.values:
-            i = int(request.values['id'])
+            i = request.values['id']
     except Exception as e:
         print(f'Recieved error <{e}> while parsing args to viewconvo request')
         return vc_response(err=True) # empty response
     
-    return vc_response(i)
+    return vc_response(i=i)
                         
 
 
