@@ -33,16 +33,20 @@ def add_comment(comment):
         root = comment.id
         reply = None
     else:
-        assert p[0] == 't1' 
-        root = data.CORPUS.get_utterance(p[1]).root
+        assert p[0] == 't1'
+        parent = data.CORPUS.get_utterance(p[1])
+        parent.meta['children'].append(comment.id)
+        root = parent.root
         reply = p[1]
+        
 
     # add the utterance to the corpus
     data.COMMENTS[comment.id] = comment
+    meta = {'children': []}
     utt = Utterance(id=comment.id, text=comment.body,
                     reply_to=reply, root=root,
                     user=User(name=comment.author.name if comment.author is not None else "error"),
-                    timestamp=comment.created_utc)
+                    timestamp=comment.created_utc, meta=meta)
     # print(f'adding utterance {utt} to corpus')
     if data.CORPUS == None:
         data.CORPUS = Corpus(utterances=[utt])
