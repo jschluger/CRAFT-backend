@@ -26,9 +26,11 @@ POSTS  = {}
 ACTIVE = {}
 
 CORPUS = None
+COMMENTS = {}
 
 SCORES_f = 'data/scores.pkl'
 POSTS_f  = 'data/posts.pkl'
+CORPUS_f = 'live-rCMV-corpus'
 
 reddit = praw.Reddit(client_id='sq6GgQR_4lri7A',
                      client_secret='dWes213OfQWpF7eCVxeImaHSbiw',

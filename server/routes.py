@@ -1,5 +1,7 @@
 from flask import Blueprint, request, Response
 import time, json, data
+from pprint import pprint
+from convokit import Utterance, Conversation, Corpus
 
 
 routes = Blueprint('routes', __name__)
@@ -108,7 +110,7 @@ def viewtimes():
     return resp
 
 
-def format_vc_response(i=-1, parent=None, children=[], data=None):
+def format_vc_response(i=-1, parent=None, children=[], convo=None):
     """
     Formats a response to a viewtop request
     
@@ -122,10 +124,13 @@ def format_vc_response(i=-1, parent=None, children=[], data=None):
             'id': i,
             'parent': parent,
             'children': children,
-            'data': data
+            'convo': convo
         })
     resp = Response(js)
     return resp
+
+def vc_format(utt):
+    return (utt.id, utt.timestamp, utt.meta['forecast_score_cmv'] if 'forecast_score_cmv' in utt.meta else -1)
 
 def vc_response(i=-1, err=False):
     """
@@ -135,10 +140,30 @@ def vc_response(i=-1, err=False):
     
     :return: a correctly formated json response for convo <i>
     """
-    if err==True:
+    if err==True or \
+       data.CORPUS is None or \
+       i not in data.CORPUS.utterances:
+        # print(f'returning empty response; \n\terr={err}\n\ti not in data.CORPUS.utterances={i not in data.CORPUS.utterances}\n\ti={i}')
         return format_vc_response()
 
-    return format_vc_response(i=i)
+    utt = data.CORPUS.get_utterance(i)
+    convo = []
+    print('processing')
+    while utt.reply_to is not None:
+        convo.append(vc_format(utt))
+        utt = data.CORPUS.get_utterance(utt.reply_to)
+    print('processed')
+    print(f'vc response for id {i} makes convo')
+    pprint(convo[::-1])
+    ######
+    # utt = data.CORPUS.get_utterance(i)
+    # c = utt.get_conversation()
+    # print('viewing the convokit convo for this utt:')
+    # for u in c.iter_utterances():
+    #     print(u)
+
+        
+    return format_vc_response(i=i, parent=utt.reply_to, children=[], convo=convo[::-1])
     
 
 
@@ -150,6 +175,8 @@ def viewconvo():
     # Default args
     
     # Get args from request
+    print(f'recieved /viewconvo with args {request.values}')
+    i = None
     try:
         if 'id' in request.values:
             i = request.values['id']

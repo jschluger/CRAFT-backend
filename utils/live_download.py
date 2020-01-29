@@ -5,10 +5,10 @@ from pprint import pprint
 import data
 import threading
 
-def maintain_corpus():
+def maintain_corpus(history=False):
     def background():
         c = 0
-        for comment in data.reddit.subreddit('changemyview').stream.comments():
+        for comment in data.reddit.subreddit('changemyview').stream.comments(skip_existing=not history):
             add_comment(comment)
             # show_corpus()
             c += 1
@@ -38,11 +38,11 @@ def add_comment(comment):
         reply = p[1]
 
     # add the utterance to the corpus
-    m = {'comment': comment}
+    data.COMMENTS[comment.id] = comment
     utt = Utterance(id=comment.id, text=comment.body,
                     reply_to=reply, root=root,
-                    user=User(name=comment.author),
-                    timestamp=comment.created_utc, meta=m)
+                    user=User(name=comment.author.name if comment.author is not None else "error"),
+                    timestamp=comment.created_utc)
     # print(f'adding utterance {utt} to corpus')
     if data.CORPUS == None:
         data.CORPUS = Corpus(utterances=[utt])

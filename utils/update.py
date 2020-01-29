@@ -4,6 +4,8 @@ from utils import download, craft, live_download
 from pprint import pprint
 import time, convokit, pickle, os.path, data
 import threading
+from convokit import Corpus
+import praw
 
 def update():
     """
@@ -49,7 +51,7 @@ def setup():
               f' files {data.SCORES_f} and {data.POSTS_f} to start from scratch.\n'
                '--------------------------ERROR---------------------------------')
         exit(1)
-    live_download.maintain_corpus()
+    live_download.maintain_corpus() # history = not data.args.start_from_backup)
     # print(f'data.ACTIVE initialized to {data.ACTIVE}')
 
 def setup_active():
@@ -77,7 +79,7 @@ def store_data(corpus,t):
         score = 0
         com = None
         for utt in convo.iter_utterances():
-            com = utt.meta['comment']
+            com = data.COMMENTS[utt.id]
             if 'forecast_score_cmv' in utt.meta:
                 score = max(score, utt.meta['forecast_score_cmv'])
         d['leaf'] = com
@@ -104,6 +106,9 @@ def backup_data(t):
     with open(data.POSTS_f,'wb') as pf:
         pickle.dump(data.POSTS, pf)
 
+    data.CORPUS.dump(data.CORPUS_f)
+        
+
 def load_backup():
     with open(data.SCORES_f,'rb') as sf:
         try: 
@@ -116,6 +121,10 @@ def load_backup():
     with open(data.POSTS_f,'rb') as pf:
         data.POSTS = pickle.load(pf)
 
+    data.CORPUS = Corpus(filename="/Users/eoin/.convokit/saved-corpora/"+data.CORPUS_f)
+    for utt in data.CORPUS.iter_utterances():
+        data.COMMENTS[utt.id] = praw.models.Comment(reddit=data.reddit, id=utt.id)
+    
         
 def check_data():
     """
