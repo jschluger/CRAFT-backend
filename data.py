@@ -5,7 +5,7 @@ import praw
 ################################################################## 
 
 # p is number of posts to dowload from reddit on each update
-p = 25
+# p = 25
 
 # run craft is whether or not an update runs craft or uses dummy prediction scores.
 run_craft = True
@@ -16,21 +16,22 @@ run_craft = True
 # update_cron = {'second': '*/20' } # update at each time where the number of seconds is divisable by 20
 # update_cron = {'second': 0} # update at the top of each minute
 # update_cron = {'minute': 56} # update at the top of each hour
-update_cron = {'minute': '*/2'} # update at the top of each minute where the number of minutes in the time is divisible by 20
+# update_cron = {'minute': '*/2'} # update at the top of each minute where the number of minutes in the time is divisible by 20
 
 ##############################################################
 # data & data structures needed for application, Do Not Modify
 ##############################################################
-SCORES = {}
-POSTS  = {}
-ACTIVE = {}
+# SCORES = {}
+# POSTS  = {}
+# ACTIVE = {}
 
 CORPUS = None
 COMMENTS = {}
+RECIEVED = []
 
 SCORES_f = 'data/scores.pkl'
 POSTS_f  = 'data/posts.pkl'
-CORPUS_f = 'live-rCMV-corpus'
+CORPUS_f = 'data/live-rCMV-corpus'
 
 reddit = praw.Reddit(client_id='sq6GgQR_4lri7A',
                      client_secret='dWes213OfQWpF7eCVxeImaHSbiw',

@@ -2,23 +2,9 @@ from flask import Blueprint, request, Response
 import time, json, data
 from pprint import pprint
 from convokit import Utterance, Conversation, Corpus
-
+from utils import delta
 
 routes = Blueprint('routes', __name__)
-
-def format_score(scoreobj):
-    """ 
-    Formats an element of a list stored at data.SCORES[t] to be sent to a client
-
-    :param scoreobj: dict of form
-                      {'leaf': praw obj of leaf comment in conversation
-                       'score': predicted derailment score of conversation }
-
-    :return: (predicted score, link to leaf comment) tuple
-    """
-    link = f'http://reddit.com{scoreobj["leaf"].permalink}'
-    return (scoreobj['score'], scoreobj['leaf'].id)
-
 
 def format_vt_response(when=-1, ranking=None):
     """
@@ -34,49 +20,10 @@ def format_vt_response(when=-1, ranking=None):
             'when': when,
             'ranking': ranking
         })
+    # print(f'/viewtop sending {js}')
     resp = Response(js)
     return resp
     
-    
-def vt_response(k,t, err=False):
-    """
-    Responds to a viewtop request
-
-    :param when: number of conversations to return
-    :param t: requested update time
-    
-    :return: a correctly formated json response containing the top <k> most likely 
-             conversations to derail as predicted during the update taking place
-             at the latest time before <t>
-    """
-    if err==True:
-        return format_vt_response()
-    
-    times = sorted(data.SCORES.keys())
-    # print(f'times is {times}')
-    if len(times) == 0:
-        return format_vt_response()
-
-    # find out_t as latest update time before t    
-    out_t = 0
-    if t > times[-1]:
-        out_t = times[-1]
-    elif t < times[0]:
-        out_t = times[0]
-    else:
-        for i,x in enumerate(times):
-            if x > t:
-                break
-        out_t = times[i-1 if i > 0 else 0]
-
-    # if k == -1, return all scores, otherwise return the first k
-    if k == -1:
-        ranks = list(map(format_score, data.SCORES[out_t]))
-    else:
-        ranks = list(map(format_score, data.SCORES[out_t][:k]))
-        
-    return format_vt_response(when= out_t, ranking= ranks)
-
 @routes.route("/viewtop", methods=['POST'])
 def viewtop():
     """
@@ -85,7 +32,7 @@ def viewtop():
     # Default args
     k = 20
     t = int(time.time())
-
+    
     # Get args from request
     try:
         if 'k' in request.values:
@@ -94,23 +41,32 @@ def viewtop():
             t = int(request.values['t'])
     except Exception as e:
         print(f'Recieved error <{e}> while parsing args to viewtop request')
-        return vt_response(err=True) # empty response
-    
-    return vt_response(k,t)
+        return format_vt_response() # empty response
+
+    ids = data.RECIEVED[-k:]
+    ids.sort(key=lambda i: data.CORPUS.get_utterance(i).meta['craft_score'], reverse=True)
+    ranking = list(map(lambda i:
+                   (
+                       data.CORPUS.get_utterance(i).meta['craft_score'],
+                       i,
+                       delta.delta(i)
+                   ),
+                   ids))
+    return format_vt_response(when= -1, ranking=ranking)
 
 
 @routes.route("/viewtimes", methods=['POST'])
 def viewtimes():
     """
-    Route to handle viewtimes
+    Depricated?
     """
-    times = list(data.SCORES.keys())
+    times = []
     js = json.dumps({'times':times})
     resp = Response(js)
     return resp
 
 
-def format_vc_response(i=-1, parent=None, children=[], convo=[]):
+def format_vc_response(i=-1, parent=None, children=[], convo=[], post_name="Not a Post"):
     """
     Formats a response to a viewtop request
     
@@ -124,46 +80,11 @@ def format_vc_response(i=-1, parent=None, children=[], convo=[]):
             'id': i,
             'parent': parent,
             'children': children,
-            'convo': convo
+            'convo': convo,
+            'post_name': post_name
         })
     resp = Response(js)
     return resp
-
-def vc_format(utt):
-    return (utt.id, \
-            utt.timestamp,
-            utt.meta['forecast_score_cmv'] if 'forecast_score_cmv' in utt.meta else -1,\
-            utt.text,
-            data.COMMENTS[utt.id].permalink)
-
-def vc_response(i=-1, err=False):
-    """
-    Responds to a viewconvo request
-
-    :param i: id of convo to return
-    
-    :return: a correctly formated json response for convo <i>
-    """
-    if err==True or \
-       data.CORPUS is None or \
-       i not in data.CORPUS.utterances:
-        # print(f'returning empty response; \n\terr={err}\n\ti not in data.CORPUS.utterances={i not in data.CORPUS.utterances}\n\ti={i}')
-        return format_vc_response()
-
-    utt = data.CORPUS.get_utterance(i)
-    parent = utt.reply_to
-    children = utt.meta['children']
-    convo = []
-    # print('processing')
-    while utt.reply_to is not None:
-        convo.append(vc_format(utt))
-        utt = data.CORPUS.get_utterance(utt.reply_to)
-    # print('processed')
-    # print(f'vc response for id {i} makes convo')
-    # pprint(convo[::-1])
-    return format_vc_response(i=i, parent=parent, children=children, convo=convo[::-1])
-    
-
 
 @routes.route("/viewconvo", methods=['POST'])
 def viewconvo():
@@ -173,16 +94,35 @@ def viewconvo():
     # Default args
     
     # Get args from request
-    # print(f'recieved /viewconvo with args {request.values}')
     i = None
     try:
         if 'id' in request.values:
             i = request.values['id']
     except Exception as e:
         print(f'Recieved error <{e}> while parsing args to viewconvo request')
-        return vc_response(err=True) # empty response
-    
-    return vc_response(i=i)
-                        
+        return format_vc_response() # empty response
+
+    if data.CORPUS is None or i not in data.CORPUS.utterances:
+        return format_vc_response()
+
+    utt = data.CORPUS.get_utterance(i)
+    parent = utt.reply_to
+    children = utt.meta['children']
+    convo = []
+    # print('processing')
+    while True:
+        comment = data.COMMENTS[i]
+        formatted = (utt.id, utt.timestamp,
+            utt.meta['craft_score'] if 'craft_score' in utt.meta else -1,\
+            utt.text,
+            comment.permalink,
+            comment.author.name)    
+        convo.append(formatted)
+
+        if utt.reply_to is None:
+            break
+        utt = data.CORPUS.get_utterance(utt.reply_to)
+
+    return format_vc_response(i=i, parent=parent, children=children, convo=convo[::-1], post_name=comment.submission.title)                    
 
 
