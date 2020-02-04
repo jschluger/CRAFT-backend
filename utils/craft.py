@@ -445,7 +445,14 @@ def evaluateDataset(dataset, encoder, context_encoder, predictor, voc, batch_siz
                                             true_batch_size, device)
 
         # format the output as a dataframe (which we can later re-join with the corpus)
-        if true_batch_size > 0:
+        if true_batch_size == 1:
+            convo_id = convo_ids[0]
+            pred = predictions.item()
+            score = scores.item()
+            output_df["id"].append(convo_id)
+            output_df["prediction"].append(pred)
+            output_df["score"].append(score)
+        elif true_batch_size > 1:
             for i in range(true_batch_size):
                 convo_id = convo_ids[i]
                 pred = predictions[i].item()
@@ -456,7 +463,8 @@ def evaluateDataset(dataset, encoder, context_encoder, predictor, voc, batch_siz
                 
         # print("Iteration: {}; Percent complete: {:.1f}%".format(iteration, iteration / n_iters * 100))
 
-    return pd.DataFrame(output_df).set_index("id")
+    return output_df
+    # return pd.DataFrame(output_df).set_index("id")
 
 print("Loading saved parameters...")
 if not (os.path.isfile("model_cmv.tar")):

@@ -6,6 +6,10 @@ from utils import delta
 
 routes = Blueprint('routes', __name__)
 
+def safe_score(i):
+    utt = data.CORPUS.get_utterance(i)
+    return utt.meta['craft_score'] if 'craft_score' in utt.meta else -2
+
 def format_vt_response(when=-1, ranking=None):
     """
     Formats a response to a viewtop request
@@ -44,10 +48,11 @@ def viewtop():
         return format_vt_response() # empty response
 
     ids = data.RECIEVED[-k:]
-    ids.sort(key=lambda i: data.CORPUS.get_utterance(i).meta['craft_score'], reverse=True)
+    ids.sort(key=lambda i:
+             safe_score(i), reverse=True)
     ranking = list(map(lambda i:
                    (
-                       data.CORPUS.get_utterance(i).meta['craft_score'],
+                       safe_score(i),
                        i,
                        delta.delta(i)
                    ),

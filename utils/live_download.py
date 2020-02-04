@@ -4,6 +4,7 @@ from convokit import Utterance, Conversation, Corpus, User
 from pprint import pprint
 import data
 import threading
+from utils import live_craft
 
 def maintain_corpus(history=False):
     def background():
@@ -14,7 +15,8 @@ def maintain_corpus(history=False):
             data.RECIEVED.append(comment.id)
             c += 1
             print(f'adding leaf comment # {c}; {len(list(data.CORPUS.iter_conversations()))} conversations happening accross {len(data.CORPUS.utterances)} utterances')
-                                    
+            live_craft.rank_convo(comment.id)
+            
     thread = threading.Thread(target=background, args=())
     thread.daemon = True
     thread.start()
@@ -39,7 +41,7 @@ def add_comment(comment):
         
     # add the utterance to the corpus
     data.COMMENTS[comment.id] = comment
-    meta = {'children': [], 'craft_score': 99}
+    meta = {'children': [] }
     utt = Utterance(id=comment.id, text=comment.body,
                     reply_to=reply, root=root,
                     user=User(name=comment.author.name if comment.author is not None else "error"),
