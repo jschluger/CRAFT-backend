@@ -35,7 +35,7 @@ def viewtop():
     """
     # Default args
     k = 20
-    t = int(time.time())
+    t = -1
     
     # Get args from request
     try:
@@ -47,7 +47,15 @@ def viewtop():
         print(f'Recieved error <{e}> while parsing args to viewtop request')
         return format_vt_response() # empty response
 
-    ids = data.RECIEVED[-k:]
+    print(f'processing /viewtop(k={k},t={t}')
+    
+    if t in data.TIMES.keys():
+        last = data.TIMES[t]
+    else:
+        last = len(data.RECIEVED)
+        t = -1
+    print(f'last is {last}')
+    ids = data.RECIEVED[max(0,last-k):last]
     ids.sort(key=lambda i:
              safe_score(i), reverse=True)
     ranking = list(map(lambda i:
@@ -57,15 +65,16 @@ def viewtop():
                        delta.delta(i)
                    ),
                    ids))
-    return format_vt_response(when= -1, ranking=ranking)
+    print(f'ranking is {ranking}')
+    return format_vt_response(when=t, ranking=ranking)
 
 
 @routes.route("/viewtimes", methods=['POST'])
 def viewtimes():
     """
-    Depricated?
+    get the times
     """
-    times = []
+    times = sorted(list(data.TIMES.keys()))
     js = json.dumps({'times':times})
     resp = Response(js)
     return resp
@@ -116,7 +125,7 @@ def viewconvo():
     convo = []
     # print('processing')
     while True:
-        comment = data.COMMENTS[i]
+        comment = data.COMMENTS[utt.id]
         formatted = (utt.id, utt.timestamp,
             utt.meta['craft_score'] if 'craft_score' in utt.meta else -1,\
             utt.text,

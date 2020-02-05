@@ -5,6 +5,8 @@ from pprint import pprint
 import data
 import threading
 from utils import live_craft
+from apscheduler.schedulers.background import BackgroundScheduler
+import time
 
 def maintain_corpus(history=False):
     def background():
@@ -20,6 +22,10 @@ def maintain_corpus(history=False):
     thread = threading.Thread(target=background, args=())
     thread.daemon = True
     thread.start()
+    
+    scheduler = BackgroundScheduler()
+    scheduler.add_job(func=backup_time, trigger='cron', **data.update_cron)
+    scheduler.start()
 
 def add_comment(comment):
     # first, check if we need to add the parent
@@ -56,3 +62,7 @@ def show_corpus():
     for i,utt in data.CORPUS.utterances.items():
         print(f'{i} ->  id: {utt.id}, reply_to: {utt.reply_to}, root: {utt.root} ')
             
+def backup_time():
+    t = int(time.time())
+    data.TIMES[t] = len(data.RECIEVED)
+    print(f'--->> setting data.TIMES[{t}] = {data.TIMES[t]}')
