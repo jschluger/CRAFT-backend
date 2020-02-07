@@ -10,6 +10,10 @@ def safe_score(i):
     utt = data.CORPUS.get_utterance(i)
     return utt.meta['craft_score'] if 'craft_score' in utt.meta else -2
 
+def is_leaf(i):
+    utt = data.CORPUS.get_utterance(i)
+    return len(utt.meta['children']) == 0
+
 def format_vt_response(when=-1, ranking=None):
     """
     Formats a response to a viewtop request
@@ -34,7 +38,7 @@ def viewtop():
     Route to handle viewtop requests
     """
     # Default args
-    k = 20
+    k = 50
     t = -1
     
     # Get args from request
@@ -47,17 +51,28 @@ def viewtop():
         print(f'Recieved error <{e}> while parsing args to viewtop request')
         return format_vt_response() # empty response
 
-    print(f'processing /viewtop(k={k},t={t}')
+    # print(f'processing /viewtop(k={k},t={t}')
     
     if t in data.TIMES.keys():
         last = data.TIMES[t]
     else:
         last = len(data.RECIEVED)
         t = -1
-    print(f'last is {last}')
-    ids = data.RECIEVED[max(0,last-k):last]
+
+    t1 = t - (60 * 60) # one hour earlier
+    if t1 in data.TIMES.keys():
+        first = data.TIMES[t1]
+    else:
+        first = 0
+        
+    # print(f'last is {last}')
+    ids = data.RECIEVED[first:last]
+    ids = list(filter(lambda i:
+                      is_leaf(i),
+                      ids))
     ids.sort(key=lambda i:
              safe_score(i), reverse=True)
+    ids = ids[:k]
     ranking = list(map(lambda i:
                    (
                        safe_score(i),
@@ -65,7 +80,7 @@ def viewtop():
                        delta.delta(i)
                    ),
                    ids))
-    print(f'ranking is {ranking}')
+    # print(f'ranking is {ranking}')
     return format_vt_response(when=t, ranking=ranking)
 
 
