@@ -6,13 +6,30 @@ from utils import delta
 
 routes = Blueprint('routes', __name__)
 
-def safe_score(i):
-    utt = data.CORPUS.get_utterance(i)
-    return utt.meta['craft_score'] if 'craft_score' in utt.meta else -2
+def safe_score(utt):
+    return utt.meta['craft_score'] if 'craft_score' in utt.meta else 0
 
-def is_leaf(i):
-    utt = data.CORPUS.get_utterance(i)
-    return len(utt.meta['children']) == 0
+def safe_removed(utt):
+    return utt.meta['removed'] if 'removed' in utt.meta else False
+    
+def safe_num_comments(utt):
+    return utt.meta['depth'] if 'depth' in utt.meta else -1
+
+def safe_delta(utt):
+    return utt.meta['delta'] if 'delta' in utt.meta else 0
+
+def is_leaf(utt,t):
+    if t == -1:
+        return len(utt.meta['children']) == 0
+    else:
+        for cid in utt.meta['children']:
+            child = data.CORPUS.get_utterance(cid)
+            if child.timestamp < t:
+                return False
+        return True
+
+def safe_author(utt):
+    return utt.user.name
 
 def format_vt_response(when=-1, ranking=None):
     """
@@ -68,16 +85,17 @@ def viewtop():
     # print(f'last is {last}')
     ids = data.RECIEVED[first:last]
     ids = list(filter(lambda i:
-                      is_leaf(i),
+                      is_leaf(data.CORPUS.get_utterance(i),t),
                       ids))
     ids.sort(key=lambda i:
-             safe_score(i), reverse=True)
+             safe_score(data.CORPUS.get_utterance(i)), reverse=True)
     ids = ids[:k]
     ranking = list(map(lambda i:
                    (
-                       safe_score(i),
+                       safe_score(data.CORPUS.get_utterance(i)),
                        i,
-                       delta.delta(i)
+                       safe_delta(data.CORPUS.get_utterance(i)),
+                       safe_num_comments(data.CORPUS.get_utterance(i))
                    ),
                    ids))
     # print(f'ranking is {ranking}')
@@ -95,7 +113,7 @@ def viewtimes():
     return resp
 
 
-def format_vc_response(i=-1, parent=None, children=[], convo=[], post_name="Not a Post"):
+def format_vc_response(i=-1, parent=None, children=[], convo=[], post_name="Not a Post", post_author=None):
     """
     Formats a response to a viewtop request
     
@@ -110,7 +128,8 @@ def format_vc_response(i=-1, parent=None, children=[], convo=[], post_name="Not 
             'parent': parent,
             'children': children,
             'convo': convo,
-            'post_name': post_name
+            'post_name': post_name,
+            'post_author': post_author
         })
     resp = Response(js)
     return resp
@@ -141,17 +160,22 @@ def viewconvo():
     # print('processing')
     while True:
         comment = data.COMMENTS[utt.id]
-        formatted = (utt.id, utt.timestamp,
-            utt.meta['craft_score'] if 'craft_score' in utt.meta else -1,\
-            utt.text,
-            comment.permalink,
-            comment.author.name)    
+        formatted = (utt.id,
+                     utt.timestamp,
+                     safe_score(utt),
+                     utt.text,
+                     comment.permalink,
+                     safe_author(utt),
+                     safe_removed(utt),
+                     utt.meta['children']
+        )    
         convo.append(formatted)
 
         if utt.reply_to is None:
             break
         utt = data.CORPUS.get_utterance(utt.reply_to)
 
-    return format_vc_response(i=i, parent=parent, children=children, convo=convo[::-1], post_name=comment.submission.title)                    
+    return format_vc_response(i=i, parent=parent, children=children, convo=convo[::-1],
+                              post_name=comment.submission.title, post_author=comment.submission.author.name)                    
 
 

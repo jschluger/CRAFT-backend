@@ -30,8 +30,8 @@ COMMENTS = {}
 RECIEVED = []
 TIMES = {}
 
-SCORES_f = 'data/scores.pkl'
-POSTS_f  = 'data/posts.pkl'
+RECIEVED_f = 'data/recieved.pkl'
+TIMES_f  = 'data/times.pkl'
 CORPUS_f = 'data/live-rCMV-corpus'
 
 reddit = praw.Reddit(client_id='sq6GgQR_4lri7A',
