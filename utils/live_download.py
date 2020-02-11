@@ -1,9 +1,8 @@
-import praw
-import convokit
+import praw, convokit
 from convokit import Utterance, Conversation, Corpus, User
 from pprint import pprint
 import data
-import threading
+import threading, time
 from utils import live_craft, delta
 
 def maintain_corpus(history=False):
@@ -18,7 +17,7 @@ def maintain_corpus(history=False):
             live_craft.rank_convo(comment.id)
             delta.add_delta(comment.id)
 
-            
+    data.TIMES[time.time()] = 0
     thread = threading.Thread(target=background, args=())
     thread.daemon = True
     thread.start()
@@ -39,6 +38,11 @@ def add_comment(comment):
     else:
         assert p[0] == 't1'
         parent = data.CORPUS.get_utterance(p[1])
+        if len(parent.meta['children']) == 0:
+            add_endings(parent, comment.id, pi=parent.id)
+        else:
+            add_endings(parent, comment.id)
+            
         parent.meta['children'].append(comment.id)
         root = parent.root
         reply = p[1]
@@ -46,7 +50,7 @@ def add_comment(comment):
         
     # add the utterance to the corpus
     data.COMMENTS[comment.id] = comment
-    meta = {'children': [], 'depth': depth }
+    meta = {'children': [], 'endings': [], 'depth': depth, 'removed': 0 }
     utt = Utterance(id=comment.id, text=comment.body,
                     reply_to=reply, root=root,
                     user=User(name=comment.author.name if comment.author is not None else "n/a"),
@@ -56,7 +60,18 @@ def add_comment(comment):
     else:
         data.CORPUS = data.CORPUS.add_utterances([utt])
     
+def add_endings(utt, i, pi=None):
+    if pi == None:
+        utt.meta['endings'].append(i)
+    else:
+        utt.meta['endings'].append(i)
+        if pi in utt.meta['endings']:
+            utt.meta['endings'].remove(pi)
+        
+    if utt.reply_to != None:
+        add_endings(data.CORPUS.get_utterance(utt.reply_to), i, pi=pi)
 
+        
 def show_corpus():
     for i,utt in data.CORPUS.utterances.items():
         print(f'{i} ->  id: {utt.id}, reply_to: {utt.reply_to}, root: {utt.root} ')

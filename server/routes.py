@@ -10,7 +10,7 @@ def safe_score(utt):
     return utt.meta['craft_score'] if 'craft_score' in utt.meta else 0
 
 def safe_removed(utt):
-    return utt.meta['removed'] if 'removed' in utt.meta else False
+    return utt.meta['removed'] if 'removed' in utt.meta else 0
     
 def safe_num_comments(utt):
     return utt.meta['depth'] if 'depth' in utt.meta else -1
@@ -41,15 +41,19 @@ def an_hour_before(t):
     m = t
     cur = t
     print(f'an_hour_before({t})')
-    print(f'data.TIMES is {data.TIMES}')
+    # print(f'data.TIMES is {data.TIMES}')
     for t1 in sorted(data.TIMES.keys(), reverse=True):
-        print(f't1 is {t1}')
+        # print(f't1 is {t1}')
         d = abs(t - (60*60) - t1)
+        # print(f'd is {d}')
         if d < m:
+            # print('resetting min and cur')
+            m = d
             cur = t1
         else:
+            # print('breaking')
             break
-    print(f'returning {cur}')
+    # print(f'returning {cur}')
     return cur
             
 
@@ -99,7 +103,9 @@ def viewtop():
         t = -1
 
     t1 = an_hour_before(t if t != -1 else time.time())
-    first = data.TIMES[t1]
+    print(f'found time {t-t1} seconds before {t}\n\t{time.time()-t1} seconds before now')
+    first = data.TIMES[t1] if t1 in data.TIMES else 0
+    print(f'found first={first}')
 
     # print(f'last is {last}')
     ids = data.RECIEVED[first:last]
@@ -114,7 +120,8 @@ def viewtop():
                        safe_score(data.CORPUS.get_utterance(i)),
                        i,
                        safe_delta(data.CORPUS.get_utterance(i)),
-                       safe_num_comments(data.CORPUS.get_utterance(i))
+                       safe_num_comments(data.CORPUS.get_utterance(i)),
+                       data.COMMENTS[i].submission.title
                    ),
                    ids))
     # print(f'ranking is {ranking}')
@@ -126,13 +133,13 @@ def viewtimes():
     """
     get the times
     """
-    times = sorted(list(data.TIMES.keys()))
+    times = sorted(list(data.TIMES.keys()))[1:]
     js = json.dumps({'times':times})
     resp = Response(js)
     return resp
 
 
-def format_vc_response(i=-1, parent=None, children=[], convo=[], post_name="Not a Post", post_author=None):
+def format_vc_response(i=-1, parent=None, endings=[], convo=[], post_name="Not a Post", post_author=None):
     """
     Formats a response to a viewtop request
     
@@ -145,7 +152,7 @@ def format_vc_response(i=-1, parent=None, children=[], convo=[], post_name="Not 
         {
             'id': i,
             'parent': parent,
-            'children': children,
+            'endings': endings,
             'convo': convo,
             'post_name': post_name,
             'post_author': post_author
@@ -174,7 +181,7 @@ def viewconvo():
 
     utt = data.CORPUS.get_utterance(i)
     parent = utt.reply_to
-    children = utt.meta['children']
+    endings = utt.meta['endings']
     convo = []
     # print('processing')
     while True:
@@ -186,7 +193,7 @@ def viewconvo():
                      comment.permalink,
                      safe_author(utt),
                      safe_removed(utt),
-                     utt.meta['children']
+                     utt.meta['endings']
         )    
         convo.append(formatted)
         
@@ -194,7 +201,7 @@ def viewconvo():
             break
         utt = data.CORPUS.get_utterance(utt.reply_to)
 
-    return format_vc_response(i=i, parent=parent, children=children, convo=convo[::-1],
+    return format_vc_response(i=i, parent=parent, endings=endings, convo=convo[::-1],
                               post_name=comment.submission.title, post_author=safe_post_author(comment))                    
 
 

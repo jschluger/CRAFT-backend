@@ -13,23 +13,23 @@ def setup():
 
 
 def schedule():
-    save_time()
-    find_deleted()
-    backups.backup_data()
-    print('done with scheduled tasks')
-
-def save_time():
     t = int(time.time())
+    save_time(t)
+    if data.TIMES[t] > 0:
+        find_deleted()
+        backups.backup_data()
+    print(f'done with scheduled tasks in {time.time() - t} seconds')
+
+def save_time(t):
     data.TIMES[t] = len(data.RECIEVED)
     print(f'--->> setting data.TIMES[{t}] = {data.TIMES[t]}')
 
 
 def find_deleted():
     for utt in data.CORPUS.iter_utterances():
+        if utt.meta['removed'] > 0:
+            continue
         comment = praw.models.Comment(reddit=data.reddit, id=utt.id)
-        if comment.body != utt.text:
-            if comment.body == '[removed]': #  or comment.body == '[deleted]':
-                print(f'found removal in comment {utt.id}! \n\t"{utt.text}"\n\t-->\n\t"{comment.body}"')
-                utt.meta['removed'] = True
-        else:
-            utt.meta['removed'] = False
+        if comment.body == '[removed]': #  or comment.body == '[deleted]':
+            print(f'found removal in comment {utt.id}! \n\t"{utt.text}"\n\t-->\n\t"{comment.body}"')
+            utt.meta['removed'] = time.time()
