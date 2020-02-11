@@ -31,6 +31,28 @@ def is_leaf(utt,t):
 def safe_author(utt):
     return utt.user.name
 
+def safe_post_author(com):
+    if com.submission.author is not None:
+        return com.submission.author.name
+    else:
+        return 'n/a'
+
+def an_hour_before(t):
+    m = t
+    cur = t
+    print(f'an_hour_before({t})')
+    print(f'data.TIMES is {data.TIMES}')
+    for t1 in sorted(data.TIMES.keys(), reverse=True):
+        print(f't1 is {t1}')
+        d = abs(t - (60*60) - t1)
+        if d < m:
+            cur = t1
+        else:
+            break
+    print(f'returning {cur}')
+    return cur
+            
+
 def format_vt_response(when=-1, ranking=None):
     """
     Formats a response to a viewtop request
@@ -76,12 +98,9 @@ def viewtop():
         last = len(data.RECIEVED)
         t = -1
 
-    t1 = t - (60 * 60) # one hour earlier
-    if t1 in data.TIMES.keys():
-        first = data.TIMES[t1]
-    else:
-        first = 0
-        
+    t1 = an_hour_before(t if t != -1 else time.time())
+    first = data.TIMES[t1]
+
     # print(f'last is {last}')
     ids = data.RECIEVED[first:last]
     ids = list(filter(lambda i:
@@ -170,12 +189,12 @@ def viewconvo():
                      utt.meta['children']
         )    
         convo.append(formatted)
-
+        
         if utt.reply_to is None:
             break
         utt = data.CORPUS.get_utterance(utt.reply_to)
 
     return format_vc_response(i=i, parent=parent, children=children, convo=convo[::-1],
-                              post_name=comment.submission.title, post_author=comment.submission.author.name)                    
+                              post_name=comment.submission.title, post_author=safe_post_author(comment))                    
 
 
