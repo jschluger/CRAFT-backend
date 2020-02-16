@@ -8,15 +8,19 @@ from utils import live_craft, delta
 def maintain_corpus(history=False):
     def background():
         c = 0
-        for comment in data.reddit.subreddit('changemyview').stream.comments(skip_existing=not history):
-            add_comment(comment)
-            # show_corpus()
-            data.RECIEVED.append(comment.id)
-            c += 1
-            print(f'adding leaf comment # {c}; {len(list(data.CORPUS.iter_conversations()))} conversations happening accross {len(data.CORPUS.utterances)} utterances')
-            live_craft.rank_convo(comment.id)
-            delta.add_delta(comment.id)
-
+        while True:
+            try:
+                for comment in data.reddit.subreddit('changemyview').stream.comments(skip_existing=not history):
+                    add_comment(comment)
+                    # show_corpus()
+                    data.RECIEVED.append(comment.id)
+                    c += 1
+                    print(f'adding leaf comment # {c}; {len(list(data.CORPUS.iter_conversations()))} conversations happening accross {len(data.CORPUS.utterances)} utterances')
+                    live_craft.rank_convo(comment.id)
+                    delta.add_delta(comment.id)
+            except prawcore.exceptions.RequestException as e:
+                print(f'got error {e} from subreddit stream; restarting stream')
+            
     data.TIMES[time.time()] = 0
     thread = threading.Thread(target=background, args=())
     thread.daemon = True
