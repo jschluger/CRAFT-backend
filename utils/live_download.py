@@ -1,4 +1,4 @@
-import praw, convokit
+import praw, convokit, prawcore
 from convokit import Utterance, Conversation, Corpus, User
 from pprint import pprint
 import data
@@ -20,8 +20,10 @@ def maintain_corpus(history=False):
                     delta.add_delta(comment.id)
             except prawcore.exceptions.RequestException as e:
                 print(f'got error {e} from subreddit stream; restarting stream')
-            
-    data.TIMES[time.time()] = 0
+
+    if len(data.TIMES) == 0:
+        data.TIMES[time.time()] = 0
+        
     thread = threading.Thread(target=background, args=())
     thread.daemon = True
     thread.start()
@@ -54,6 +56,7 @@ def add_comment(comment):
         
     # add the utterance to the corpus
     data.COMMENTS[comment.id] = comment
+    _ = comment.submission.title
     meta = {'children': [], 'endings': [], 'depth': depth, 'removed': 0 }
     utt = Utterance(id=comment.id, text=comment.body,
                     reply_to=reply, root=root,

@@ -10,10 +10,13 @@ def backup_data():
         pickle.dump(data.TIMES, f)
 
     
-def load_backup():
+def load_backup(download_reddit=True):
     data.CORPUS = convokit.Corpus(filename=data.CORPUS_f)
     for utt in data.CORPUS.iter_utterances():
         data.COMMENTS[utt.id] = praw.models.Comment(reddit=data.reddit, id=utt.id)
+        if download_reddit:
+            _ = data.COMMENTS[utt.id].body
+            _ = data.COMMENTS[utt.id].submission.title
 
     with open(data.RECIEVED_f,'rb') as f:
         data.RECIEVED = pickle.load(f)

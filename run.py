@@ -1,5 +1,9 @@
+from gevent import monkey
+monkey.patch_all()
+
+
 # parse command line arguments
-import argparse, os
+import argparse, os, time
 parser = argparse.ArgumentParser()
 parser.add_argument('--start_from_backup', default=False, action='store_true',
     help='Include to load the backup files as the initial state of the data structures.')
@@ -11,10 +15,14 @@ from utils import live_download, scheduled, backups
 
 data.args = args
 
+from gevent import pywsgi
+
 if __name__ == '__main__':
     if data.args.start_from_backup:
-        backups.load_backup()
-        print('Loaded backup...')
+        entered = time.time()
+        print('Loading backups...')
+        backups.load_backup(download_reddit=True)
+        print(f'\t\t...backups loaded {time.time() - entered} seconds')
     elif os.path.isdir(data.CORPUS_f):
         print( '--------------------------ERROR---------------------------------\n'
                'Did not pass --start_from_backup, but backup files already exist.\n'
@@ -28,5 +36,8 @@ if __name__ == '__main__':
     scheduled.setup()
     
     # start the flask app!
-    app.run(host='0.0.0.0', port=8080, use_reloader=False)
-    
+    # app.run(host='0.0.0.0', port=8080, use_reloader=False)
+
+    server = pywsgi.WSGIServer(listener=('0.0.0.0', 8080), application=app)
+    print('Starting the server!')
+    server.serve_forever()
