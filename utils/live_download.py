@@ -15,7 +15,8 @@ def maintain_corpus(history=False):
                     # show_corpus()
                     data.RECIEVED.append(comment.id)
                     c += 1
-                    print(f'adding leaf comment # {c}; {len(list(data.CORPUS.iter_conversations()))} conversations happening accross {len(data.CORPUS.utterances)} utterances')
+                    if c % 500 == 0:
+                        print(f'adding leaf comment # {c}; {len(list(data.CORPUS.iter_conversations()))} conversations happening accross {len(data.CORPUS.utterances)} utterances')
                     live_craft.rank_convo(comment.id)
                     delta.add_delta(comment.id)
             except prawcore.exceptions.RequestException as e:

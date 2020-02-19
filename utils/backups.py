@@ -20,5 +20,6 @@ def load_backup(download_reddit=True):
 
     with open(data.RECIEVED_f,'rb') as f:
         data.RECIEVED = pickle.load(f)
+
     with open(data.TIMES_f,'rb') as f:
         data.TIMES = pickle.load(f)

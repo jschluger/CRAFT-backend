@@ -433,7 +433,7 @@ def evaluateDataset(dataset, encoder, context_encoder, predictor, voc, batch_siz
         "prediction": [],
         "score": []
     }
-    print(f'... running craft on {len(dataset)} new sub-conversations')
+    # print(f'... running craft on {len(dataset)} new sub-conversations')
     for iteration in range(1, n_iters+1):
         batch, batch_dialogs, _, true_batch_size = next(batch_iterator)
         # Extract fields from batch

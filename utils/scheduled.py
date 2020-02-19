@@ -1,6 +1,7 @@
 import data
 from apscheduler.schedulers.background import BackgroundScheduler
 import time
+from datetime import datetime
 import praw
 from utils import backups
 
@@ -14,22 +15,35 @@ def setup():
 
 def schedule():
     t = int(time.time())
+    print(f'{datetime.utcfromtimestamp(t).strftime("%I:%M:%S %p on %b %-d, %Y UTC")}: running scheduled tasks')
     save_time(t)
     if data.TIMES[t] > 0:
-        find_deleted()
+        find_deleted(t)
         backups.backup_data()
-    print(f'done with scheduled tasks in {time.time() - t} seconds')
+    print(f' --> scheduled tasks done in {time.time() - t} seconds')
 
 def save_time(t):
     data.TIMES[t] = len(data.RECIEVED)
-    print(f'--->> setting data.TIMES[{t}] = {data.TIMES[t]}')
 
-
-def find_deleted():
-    for utt in data.CORPUS.iter_utterances():
+def find_deleted(t):
+    c = len(data.RECIEVED) - 1
+    now = time.time()
+    while c >= 0:
+        utt = data.CORPUS.get_utterance(data.RECIEVED[c])
+        # print(f'c={c}\t utt {utt.id}\t at time {utt.timestamp} \t now={time.time()-now}')
+        now = time.time()
+        if t - utt.timestamp > data.SEC_PER_DAY:
+            break
         if utt.meta['removed'] > 0:
+            c -= 1
             continue
-        comment = praw.models.Comment(reddit=data.reddit, id=utt.id)
-        if comment.body == '[removed]': #  or comment.body == '[deleted]':
-            print(f'found removal in comment {utt.id}! \n\t"{utt.text}"\n\t-->\n\t"{comment.body}"')
-            utt.meta['removed'] = time.time()
+        
+        check_removed(utt, t)
+        c -= 1
+        
+def check_removed(utt, t):
+    comment = praw.models.Comment(reddit=data.reddit, id=utt.id)
+    if comment.body == '[removed]':
+        print(f'found removal in comment {utt.id}')
+        utt.meta['removed'] = t
+

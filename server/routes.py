@@ -41,7 +41,7 @@ def an_hour_before(t):
     m = t
     cur = t
     for t1 in sorted(data.TIMES.keys(), reverse=True):
-        d = abs(t - (60*60) - t1)
+        d = abs(t - ( data.SEC_PER_HOUR ) - t1)
         if d < m:
             m = d
             cur = t1
@@ -55,7 +55,7 @@ def format_vt_response(when=-1, ranking=None):
     Formats a response to a viewtop request
     
     :param when: time of the update
-    :param ranking: list of (predicted score, link to leaf comment) tuples 
+    :param ranking: list of (...) tuples
 
     :return: json for a viewtop request
     """    
@@ -96,7 +96,7 @@ def viewtop():
         t = -1
     
     t1 = an_hour_before(t if t != -1 else time.time())
-    print(f'\tan_hour_before found time {t-t1} seconds before {t}\n\t{time.time()-t1} seconds before now')
+    # print(f'\tan_hour_before found time {t-t1} seconds before {t}\n\t{time.time()-t1} seconds before now')
     # print(f':: :: :: \t\t\t\t\t {time.time() - entered} \t seconds into /viewtop :: :: ::')
     first = data.TIMES[t1] if t1 in data.TIMES else 0
 
