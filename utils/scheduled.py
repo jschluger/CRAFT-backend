@@ -26,24 +26,40 @@ def save_time(t):
     data.TIMES[t] = len(data.RECIEVED)
 
 def find_deleted(t):
-    c = len(data.RECIEVED) - 1
-    now = time.time()
-    while c >= 0:
-        utt = data.CORPUS.get_utterance(data.RECIEVED[c])
-        # print(f'c={c}\t utt {utt.id}\t at time {utt.timestamp} \t now={time.time()-now}')
-        now = time.time()
-        if t - utt.timestamp > data.SEC_PER_DAY:
-            break
+    for utt in data.CORPUS.iter_utterances():
         if utt.meta['removed'] > 0:
-            c -= 1
             continue
+        comment = praw.models.Comment(reddit=data.reddit, id=utt.id)
+        if comment.body == '[removed]':
+            print(f'found removal in comment {utt.id}')
+            utt.meta['removed'] = t
+
+# def find_deleted(t):
+#     c = len(data.RECIEVED) - 1
+#     now = time.time()
+#     while c >= 0:
+#         utt = data.CORPUS.get_utterance(data.RECIEVED[c])
+#         # print(f'c={c}\t utt {utt.id}\t at time {utt.timestamp} \t now={time.time()-now}')
+#         now = time.time()
+#         if t - utt.timestamp > data.SEC_PER_DAY:
+#             break
+#         if utt.meta['removed'] > 0:
+#             c -= 1
+#             continue
         
-        check_removed(utt, t)
-        c -= 1
+#         check_removed(utt, t)
+#         c -= 1
         
-def check_removed(utt, t):
-    comment = praw.models.Comment(reddit=data.reddit, id=utt.id)
-    if comment.body == '[removed]':
-        print(f'found removal in comment {utt.id}')
-        utt.meta['removed'] = t
+# def check_removed(utt, t):
+#     while True:
+#         if utt.meta['removed'] == 0:
+#             comment = praw.models.Comment(reddit=data.reddit, id=utt.id)
+#             if comment.body == '[removed]':
+#                 print(f'found removal in comment {utt.id}')
+#                 utt.meta['removed'] = t
+
+#         if utt.reply_to == None:
+#             break
+#         else:
+#             utt = data.CORPUS.get_utterance(utt.reply_to)
 

@@ -16,7 +16,7 @@ run_craft = True
 # update_cron = {'second': '*/20' } # update at each time where the number of seconds is divisable by 20
 # update_cron = {'second': 0} # update at the top of each minute
 # update_cron = {'minute': 56} # update at the top of each hour
-update_cron = {'minute': '*/1'} # update at the top of each minute where the number of minutes in the time is divisible by 20
+update_cron = {'minute': '*/5'} # update at the top of each minute where the number of minutes in the time is divisible by 5
 
 ##############################################################
 # constants & data structures needed for application, Do Not Modify

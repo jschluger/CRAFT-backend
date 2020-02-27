@@ -96,21 +96,15 @@ def viewtop():
         t = -1
     
     t1 = an_hour_before(t if t != -1 else time.time())
-    # print(f'\tan_hour_before found time {t-t1} seconds before {t}\n\t{time.time()-t1} seconds before now')
-    # print(f':: :: :: \t\t\t\t\t {time.time() - entered} \t seconds into /viewtop :: :: ::')
     first = data.TIMES[t1] if t1 in data.TIMES else 0
 
     ids = data.RECIEVED[first:last]
-    # print(f':: :: :: got ids (len is {len(ids)}); \t\t\t {time.time() - entered} \t seconds into /viewtop :: :: ::')
     ids = list(filter(lambda i:
                       is_leaf(data.CORPUS.get_utterance(i),t),
                       ids))
-    # print(f':: :: :: filtered ids (len is {len(ids)}); \t\t {time.time() - entered} \t seconds into /viewtop :: :: ::')
     ids.sort(key=lambda i:
              safe_score(data.CORPUS.get_utterance(i)), reverse=True)
-    # print(f':: :: :: sorted ids (len is {len(ids)}); \t\t {time.time() - entered} \t seconds into /viewtop :: :: ::')
     ids = ids[:k]
-    # print(f':: :: :: sliced ids (len is {len(ids)}); \t\t {time.time() - entered} \t seconds into /viewtop :: :: ::')
     ranking = list(map(lambda i:
                    (
                        safe_score(data.CORPUS.get_utterance(i)),
@@ -120,7 +114,6 @@ def viewtop():
                        data.COMMENTS[i].submission.title
                    ),
                    ids))
-    # print(f':: :: :: mapped ids to ranking(len is {len(ranking)});\t {time.time() - entered} \t seconds into /viewtop :: :: ::')
     return format_vt_response(when=t, ranking=ranking)
 
 

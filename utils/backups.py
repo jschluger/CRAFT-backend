@@ -12,7 +12,12 @@ def backup_data():
     
 def load_backup(download_reddit=True):
     data.CORPUS = convokit.Corpus(filename=data.CORPUS_f)
+    c = 0
+    C = len(list(data.CORPUS.iter_utterances()))
     for utt in data.CORPUS.iter_utterances():
+        if c % 50 == 0:
+            print(f'{c} / {C}')
+        c += 1
         data.COMMENTS[utt.id] = praw.models.Comment(reddit=data.reddit, id=utt.id)
         if download_reddit:
             _ = data.COMMENTS[utt.id].body
