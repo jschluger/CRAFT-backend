@@ -3,54 +3,11 @@ import time, json, data
 from pprint import pprint
 from convokit import Utterance, Conversation, Corpus
 from utils import delta
+from server.helpers import *
 
-routes = Blueprint('routes', __name__)
+routes = Blueprint('routes', __name__)            
 
-def safe_score(utt):
-    return utt.meta['craft_score'] if 'craft_score' in utt.meta else 0
-
-def safe_removed(utt):
-    return utt.meta['removed'] if 'removed' in utt.meta else 0
-    
-def safe_num_comments(utt):
-    return utt.meta['depth'] if 'depth' in utt.meta else -1
-
-def safe_delta(utt):
-    return utt.meta['delta'] if 'delta' in utt.meta else 0
-
-def is_leaf(utt,t):
-    if t == -1:
-        return len(utt.meta['children']) == 0
-    else:
-        for cid in utt.meta['children']:
-            child = data.CORPUS.get_utterance(cid)
-            if child.timestamp < t:
-                return False
-        return True
-
-def safe_author(utt):
-    return utt.user.name
-
-def safe_post_author(com):
-    if com.submission.author is not None:
-        return com.submission.author.name
-    else:
-        return 'n/a'
-
-def an_hour_before(t):
-    m = t
-    cur = t
-    for t1 in sorted(data.TIMES.keys(), reverse=True):
-        d = abs(t - ( data.SEC_PER_HOUR ) - t1)
-        if d < m:
-            m = d
-            cur = t1
-        else:
-            break
-    return cur
-            
-
-def format_vt_response(when=-1, ranking=None):
+def format_vt_response(when=-1, ranking=None, duration=0, distrib=(0,1)):
     """
     Formats a response to a viewtop request
     
@@ -62,7 +19,9 @@ def format_vt_response(when=-1, ranking=None):
     js = json.dumps(
         {
             'when': when,
-            'ranking': ranking
+            'ranking': ranking,
+            'duration': duration,
+            'distrib': distrib
         })
     # print(f'/viewtop sending {js}')
     resp = Response(js)
@@ -94,8 +53,15 @@ def viewtop():
     else:
         last = len(data.RECIEVED)
         t = -1
+
+    if t == -1:
+        now = time.time()
+        t1 = an_hour_before(now)
+        duration = now-t1
+    else:
+        t1 = an_hour_before(t)
+        duration = t-t1
     
-    t1 = an_hour_before(t if t != -1 else time.time())
     first = data.TIMES[t1] if t1 in data.TIMES else 0
 
     ids = data.RECIEVED[first:last]
@@ -104,17 +70,31 @@ def viewtop():
                       ids))
     ids.sort(key=lambda i:
              safe_score(data.CORPUS.get_utterance(i)), reverse=True)
+
+    n_derail = 0
+    for idx, i in enumerate(ids):
+        if safe_score(data.CORPUS.get_utterance(i)) < data.THRESHOLD:
+            n_derail = idx
+            break
+    distrib = (n_derail, len(ids))
+
     ids = ids[:k]
-    ranking = list(map(lambda i:
-                   (
-                       safe_score(data.CORPUS.get_utterance(i)),
-                       i,
-                       safe_delta(data.CORPUS.get_utterance(i)),
-                       safe_num_comments(data.CORPUS.get_utterance(i)),
-                       data.COMMENTS[i].submission.title
-                   ),
-                   ids))
-    return format_vt_response(when=t, ranking=ranking)
+    ranking = []
+    for i in ids:
+        utt = data.CORPUS.get_utterance(i)
+        num_new_comments, has_derailed_since, still_active = safe_crawl_children(utt, t)
+        item = ( safe_score(utt),
+                 i,
+                 safe_delta(utt),
+                 safe_num_comments(utt),
+                 data.COMMENTS[i].submission.title,
+                 num_new_comments,
+                 has_derailed_since,
+                 still_active
+        )
+        ranking.append(item)
+        
+    return format_vt_response(when=t, ranking=ranking, duration=duration, distrib=distrib)
 
 
 @routes.route("/viewtimes", methods=['POST'])

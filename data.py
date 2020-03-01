@@ -33,6 +33,8 @@ CORPUS_f = 'data/live-rCMV-corpus'
 SEC_PER_HOUR = 60 * 60
 SEC_PER_DAY  = SEC_PER_HOUR * 24
 
+THRESHOLD = 0.548580
+
 reddit = praw.Reddit(client_id='sq6GgQR_4lri7A',
                      client_secret='dWes213OfQWpF7eCVxeImaHSbiw',
                      user_agent='jack')
