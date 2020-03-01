@@ -106,3 +106,4 @@ venv.bak/
 *.tar
 *~
 *.pkl
+data/live-rCMV-corpus/*
