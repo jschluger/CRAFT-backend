@@ -1,5 +1,5 @@
 import data
-from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.schedulers.gevent import GeventScheduler
 import time
 from datetime import datetime
 import praw
@@ -7,8 +7,8 @@ from utils import backups
 
 
 def setup():
-    print('setting up BackgroundScheduler')
-    scheduler = BackgroundScheduler()
+    print('setting up Scheduler')
+    scheduler = GeventScheduler()
     scheduler.add_job(func=schedule, trigger='cron', **data.update_cron)
     scheduler.start()
 
@@ -27,39 +27,9 @@ def save_time(t):
 
 def find_deleted(t):
     for utt in data.CORPUS.iter_utterances():
-        if utt.meta['removed'] > 0:
+        if utt.meta['removed'] > 0 or t - utt.timestamp > data.SEC_PER_DAY:
             continue
         comment = praw.models.Comment(reddit=data.reddit, id=utt.id)
         if comment.body == '[removed]':
             print(f'found removal in comment {utt.id}')
             utt.meta['removed'] = t
-
-# def find_deleted(t):
-#     c = len(data.RECIEVED) - 1
-#     now = time.time()
-#     while c >= 0:
-#         utt = data.CORPUS.get_utterance(data.RECIEVED[c])
-#         # print(f'c={c}\t utt {utt.id}\t at time {utt.timestamp} \t now={time.time()-now}')
-#         now = time.time()
-#         if t - utt.timestamp > data.SEC_PER_DAY:
-#             break
-#         if utt.meta['removed'] > 0:
-#             c -= 1
-#             continue
-        
-#         check_removed(utt, t)
-#         c -= 1
-        
-# def check_removed(utt, t):
-#     while True:
-#         if utt.meta['removed'] == 0:
-#             comment = praw.models.Comment(reddit=data.reddit, id=utt.id)
-#             if comment.body == '[removed]':
-#                 print(f'found removal in comment {utt.id}')
-#                 utt.meta['removed'] = t
-
-#         if utt.reply_to == None:
-#             break
-#         else:
-#             utt = data.CORPUS.get_utterance(utt.reply_to)
-
