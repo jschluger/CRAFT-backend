@@ -39,7 +39,7 @@ def safe_crawl_children(utt, t):
     derailed = utt.meta['removed'] > 0 or utt.text == '[removed]'
     active   = t - utt.timestamp < data.SEC_PER_DAY
     for cid in utt.meta['children']:
-        cN, cA, cD = safe_crawl_children(data.CORPUS.get_utterance(cid), t)
+        cN, cD, cA = safe_crawl_children(data.CORPUS.get_utterance(cid), t)
         n += cN
         active = active or cA
         derailed = derailed or cD
