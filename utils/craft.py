@@ -452,6 +452,7 @@ def evaluateDataset(dataset, encoder, context_encoder, predictor, voc, batch_siz
             output_df["id"].append(convo_id)
             output_df["prediction"].append(pred)
             output_df["score"].append(score)
+            
         elif true_batch_size > 1:
             for i in range(true_batch_size):
                 convo_id = convo_ids[i]

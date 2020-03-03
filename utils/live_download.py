@@ -61,7 +61,7 @@ def add_comment(comment):
     meta = {'children': [], 'endings': [], 'depth': depth, 'removed': 0 }
     utt = Utterance(id=comment.id, text=comment.body,
                     reply_to=reply, root=root,
-                    user=User(name=comment.author.name if comment.author is not None else "n/a"),
+                    user=User(id=comment.author.name if comment.author is not None else "n/a"),
                     timestamp=comment.created_utc, meta=meta)
     if data.CORPUS == None:
         data.CORPUS = Corpus(utterances=[utt])

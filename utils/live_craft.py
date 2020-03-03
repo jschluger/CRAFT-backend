@@ -1,31 +1,38 @@
-from utils import craft
 import data
+from utils import craft
+# from convokit.forecaster.CRAFTModel import CRAFTModel
+# CRAFT_model = CRAFTModel(device_type="cpu", model_path="model_cmv.tar")
 
 def rank_convo(i):
     test_pairs = load_convo_pairs(i)
     forcasts = evaluate_convo(test_pairs)
+    # forcasts = CRAFT_model.forecast(test_pairs)
     for idx, utt_id in enumerate(forcasts['id']):
         data.CORPUS.get_utterance(utt_id).meta['craft_score'] = forcasts['score'][idx]
+        
+    
         
 def load_convo_pairs(i):
     # get conversation ending in utterance with id i
     utt = data.CORPUS.get_utterance(i)
     convo = [utt]
     pairs = []
+    # pairs = {} # if using convokit craft
     while utt.reply_to is not None:
         utt = data.CORPUS.get_utterance(utt.reply_to)
         convo.append(utt)
     convo = convo[::-1]
     dialog = process_dialog(convo)
-    for idx in range(1, len(dialog)):
+    for idx in range(0, len(dialog)):
                 if dialog[idx]['scored']:
                     continue
-                reply = dialog[idx]["tokens"][:(craft.MAX_LENGTH-1)]
-                label = dialog[idx]["is_attack"]
+                reply = ["UNK"] 
+                label = False   
                 comment_id = dialog[idx]["id"]
                 # gather as context all utterances preceding the reply
-                context = [u["tokens"][:(craft.MAX_LENGTH-1)] for u in dialog[:idx]]
+                context = [u["tokens"][:(craft.MAX_LENGTH-1)] for u in dialog[:idx+1]]
                 pairs.append((context, reply, label, comment_id))
+                # pairs[comment_id] = (context, reply, label) # if using convokit craft
     return pairs
 
 def process_dialog(convo):
