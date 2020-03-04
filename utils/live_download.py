@@ -56,9 +56,17 @@ def add_comment(comment):
         depth = parent.meta['depth'] + 1
         
     # add the utterance to the corpus
-    data.COMMENTS[comment.id] = comment
-    _ = comment.submission.title
-    meta = {'children': [], 'endings': [], 'depth': depth, 'removed': 0 }
+    post_id = comment.submission.id
+    if post_id in data.POSTS:
+        data.POSTS[post_id]['convos'] += 1
+    else:
+            data.POSTS[post_id] = {'title' : comment.submission.title,
+                                   'author': comment.submission.author.name if comment.submission.author is not None else 'n/a',
+                                   'convos': 1}
+            
+    comment_number = data.POSTS[post_id]['convos']
+
+    meta = {'children': [], 'endings': [], 'depth': depth, 'removed': 0, 'post_id': post_id, 'permalink': comment.permalink, 'comment_number': comment_number}
     utt = Utterance(id=comment.id, text=comment.body,
                     reply_to=reply, root=root,
                     user=User(id=comment.author.name if comment.author is not None else "n/a"),

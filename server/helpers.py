@@ -24,12 +24,6 @@ def is_leaf(utt,t):
 
 def safe_author(utt):
     return utt.user.name
-
-def safe_post_author(com):
-    if com.submission.author is not None:
-        return com.submission.author.name
-    else:
-        return 'n/a'
     
 def safe_crawl_children(utt, t):
     """
@@ -64,3 +58,23 @@ def an_hour_before(t):
         else:
             break
     return cur
+
+def get_convo_name(utt):
+    if utt.meta['post_id'] in data.POSTS:
+        return f"{data.POSTS[utt.meta['post_id']]['title']} ~ Thread {utt.meta['comment_number']}"
+    else:
+        return "N/A"
+
+def safe_post_author(utt):
+    if utt.meta['post_id'] in data.POSTS:
+        return data.POSTS[utt.meta['post_id']]['author']
+    else:
+        return "N/A"
+
+def get_named_endings(utt):
+    ret = []
+    for ending_id in utt.meta['endings']:
+        ret.append({'convo_name': get_convo_name(data.CORPUS.get_utterance(ending_id)),
+                    'id': ending_id
+        })
+    return ret

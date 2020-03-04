@@ -83,15 +83,15 @@ def viewtop():
     for i in ids:
         utt = data.CORPUS.get_utterance(i)
         num_new_comments, has_derailed_since, still_active = safe_crawl_children(utt, t)
-        item = ( safe_score(utt),
-                 i,
-                 safe_delta(utt),
-                 safe_num_comments(utt),
-                 data.COMMENTS[i].submission.title,
-                 num_new_comments,
-                 has_derailed_since,
-                 still_active
-        )
+        item = {'score': safe_score(utt),
+                 'id': i,
+                 'delta': safe_delta(utt),
+                 'n_comments': safe_num_comments(utt),
+                 'convo_name': get_convo_name(utt),
+                 'n_new_comments': num_new_comments,
+                 'has_derailed': has_derailed_since,
+                 'still_active': still_active
+        }
         ranking.append(item)
         
     return format_vt_response(when=t, ranking=ranking, duration=duration, distrib=distrib)
@@ -108,7 +108,7 @@ def viewtimes():
     return resp
 
 
-def format_vc_response(i=-1, parent=None, endings=[], convo=[], post_name="Not a Post", post_author=None):
+def format_vc_response(i=-1, parent=None, endings=[], convo=[], convo_name="n/a", post_author=None):
     """
     Formats a response to a viewtop request
     
@@ -123,7 +123,7 @@ def format_vc_response(i=-1, parent=None, endings=[], convo=[], post_name="Not a
             'parent': parent,
             'endings': endings,
             'convo': convo,
-            'post_name': post_name,
+            'convo_name': convo_name,
             'post_author': post_author
         })
     resp = Response(js)
@@ -150,19 +150,20 @@ def viewconvo():
 
     utt = data.CORPUS.get_utterance(i)
     parent = utt.reply_to
-    endings = utt.meta['endings']
+    endings = get_named_endings(utt)
+    convo_name=get_convo_name(utt)
+    post_author=safe_post_author(utt)
+    
     convo = []
     while True:
-        comment = data.COMMENTS[utt.id]
-        formatted = (utt.id,
-                     utt.timestamp,
-                     safe_score(utt),
-                     utt.text,
-                     comment.permalink,
-                     safe_author(utt),
-                     safe_removed(utt),
-                     utt.meta['endings']
-        )    
+        formatted = {'id': utt.id,
+                     'timestamp': utt.timestamp,
+                     'score': safe_score(utt),
+                     'text': utt.text,
+                     'permalink': utt.meta['permalink'],
+                     'author': safe_author(utt),
+                     'removed': safe_removed(utt),
+        }    
         convo.append(formatted)
         
         if utt.reply_to is None:
@@ -170,6 +171,6 @@ def viewconvo():
         utt = data.CORPUS.get_utterance(utt.reply_to)
 
     return format_vc_response(i=i, parent=parent, endings=endings, convo=convo[::-1],
-                              post_name=comment.submission.title, post_author=safe_post_author(comment))                    
+                              convo_name=convo_name, post_author=post_author)                    
 
 

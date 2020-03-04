@@ -22,12 +22,13 @@ update_cron = {'minute': '*/5'} # update at the top of each minute where the num
 # constants & data structures needed for application, Do Not Modify
 ##############################################################
 CORPUS = None
-COMMENTS = {}
+POSTS = {}
 RECIEVED = []
 TIMES = {}
 
 RECIEVED_f = 'data/recieved.pkl'
 TIMES_f  = 'data/times.pkl'
+POSTS_f  = 'data/posts.pkl'
 CORPUS_f = 'data/live-rCMV-corpus'
 
 SEC_PER_HOUR = 60 * 60

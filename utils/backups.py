@@ -8,9 +8,11 @@ def backup_data():
         pickle.dump(data.RECIEVED, f)
     with open(data.TIMES_f,'wb') as f:
         pickle.dump(data.TIMES, f)
+    with open(data.POSTS_f,'wb') as f:
+        pickle.dump(data.POSTS, f)
 
     
-def load_backup(download_reddit=True):
+def load_backup():
     data.CORPUS = convokit.Corpus(filename=data.CORPUS_f)
     c = 0
     C = len(list(data.CORPUS.iter_utterances()))
@@ -18,13 +20,12 @@ def load_backup(download_reddit=True):
         if c % 50 == 0:
             print(f'{c} / {C}')
         c += 1
-        data.COMMENTS[utt.id] = praw.models.Comment(reddit=data.reddit, id=utt.id)
-        if download_reddit:
-            _ = data.COMMENTS[utt.id].body
-            _ = data.COMMENTS[utt.id].submission.title
 
     with open(data.RECIEVED_f,'rb') as f:
         data.RECIEVED = pickle.load(f)
 
     with open(data.TIMES_f,'rb') as f:
         data.TIMES = pickle.load(f)
+
+    with open(data.POSTS_f,'rb') as f:
+        data.POSTS = pickle.load(f)

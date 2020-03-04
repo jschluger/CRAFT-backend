@@ -21,7 +21,7 @@ if __name__ == '__main__':
     if data.args.start_from_backup:
         entered = time.time()
         print('Loading backups...')
-        backups.load_backup(download_reddit=True)
+        backups.load_backup()
         print(f'\t\t...backups loaded {time.time() - entered} seconds')
     elif os.path.isdir(data.CORPUS_f):
         print( '--------------------------ERROR---------------------------------\n'
