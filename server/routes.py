@@ -82,7 +82,7 @@ def viewtop():
     ranking = []
     for i in ids:
         utt = data.CORPUS.get_utterance(i)
-        num_new_comments, has_derailed_since, still_active = safe_crawl_children(utt, t)
+        num_new_comments, has_derailed_since, latest_activity = safe_crawl_children(utt, t)
         item = {'score': safe_score(utt),
                  'id': i,
                  'delta': safe_delta(utt),
@@ -90,7 +90,7 @@ def viewtop():
                  'convo_name': get_convo_name(utt),
                  'n_new_comments': num_new_comments,
                  'has_derailed': has_derailed_since,
-                 'still_active': still_active
+                 'latest_activity': latest_activity
         }
         ranking.append(item)
         

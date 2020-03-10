@@ -27,17 +27,17 @@ def safe_author(utt):
     
 def safe_crawl_children(utt, t):
     """
-    returns ( num_new_comments, has_derailed_since, still_active )
+    returns ( num_new_comments, has_derailed_since, latest_activity )
     """
     n = len(utt.meta['children'])
     derailed = utt.meta['removed'] > 0 or utt.text == '[removed]'
-    active   = t - utt.timestamp < data.SEC_PER_DAY
+    latest   = utt.timestamp
     for cid in utt.meta['children']:
-        cN, cD, cA = safe_crawl_children(data.CORPUS.get_utterance(cid), t)
+        cN, cD, cL = safe_crawl_children(data.CORPUS.get_utterance(cid), t)
         n += cN
-        active = active or cA
         derailed = derailed or cD
-    return n, derailed, active
+        latest = max(latest,cL)
+    return n, derailed, latest
 
 def safe_has_derailed_since(utt):
     return False
