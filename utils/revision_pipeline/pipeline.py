@@ -124,8 +124,9 @@ def convert_intermediate_to_corpus(accum: Intermediate) -> Corpus:
     block_hashes_to_utt_ids = {}
     for block_hash, block in accum.blocks.items():
         if block.user not in users:
-            users[block.user] = User(name=block.user)
+            users[block.user] = User(id=block.user)
         segments = accum.segment_contiguous_blocks(block.reply_chain)
+        # any complete contiguous block is a complete utterance
         for seg in segments[:-1]:
             sos = helpers.string_of_seg(seg)
             complete_utterances.add(sos)
@@ -142,19 +143,24 @@ def convert_intermediate_to_corpus(accum: Intermediate) -> Corpus:
 
         u_id = block_hashes[0]
         u_user = users[first_block.user]
-        u_root = belongs_to_segment[0][0]
+        u_root = accum.find_ultimate_hash(first_block.root_hash)
         u_replyto = _find_reply_to_from_segment(belongs_to_segment)
         u_timestamp = first_block.timestamp
         u_text = "\n".join([accum.blocks[h].text for h in block_hashes])
         u_meta = {}
         u_meta["constituent_blocks"] = block_hashes
-
+        u_meta["conversation_title"] = accum.blocks[u_root].text.strip("=") if u_root else u_text[:32] + "..."
         for each_hash in block_hashes:
             block_hashes_to_utt_ids[each_hash] = u_id
 
         this_utterance = Utterance(
-            u_id, u_user, u_root, u_replyto, u_timestamp, u_text)
-        this_utterance.meta = u_meta
+            id=u_id,
+            user=u_user,
+            root=u_root,
+            reply_to=u_replyto,
+            timestamp=u_timestamp,
+            text=u_text,
+            meta=u_meta)
 
         utterances.append(this_utterance)
 
@@ -333,11 +339,8 @@ def _parse_diff(revisions: list, diff: dict, accum: Intermediate) -> Intermediat
                 block_depth = helpers.compute_text_depth(unedited_text)
                 if hashed_text not in accum.blocks:  # this old block has not yet been added to accum
                     if helpers.is_new_section_text(unedited_text):
-                        block.is_header = True
                         block.root_hash = hashed_text
-                        # print("THIS IS A ROOT HASH FROM OLD BLOCK", hashed_text, block.root_hash)
                         curr_section_hash = hashed_text
-                        # print("I. CURR SECTION HASH NOW", curr_section_hash)
                     block.text = unedited_text
                     block.timestamp = revisions[0]["timestamp"]
                     block.user = None
@@ -349,7 +352,6 @@ def _parse_diff(revisions: list, diff: dict, accum: Intermediate) -> Intermediat
                 else:
                     curr_section_hash = accum.blocks.get(
                         hashed_text, None).root_hash
-                    # print("II. CURR SECTION HASH NOW:", curr_section_hash)
                     # unchanged block has already been added to accum
                     pass
                 last_hash = hashed_text
@@ -363,39 +365,68 @@ def _parse_diff(revisions: list, diff: dict, accum: Intermediate) -> Intermediat
             added_text = str(all_td[2].get_text())
             hashed_text = helpers.compute_md5(added_text)
             if len(added_text) > 0:
-                block.text = added_text
-                block.timestamp = revisions[1]["timestamp"]
-                block.user = revisions[1].get("user", "userhidden")
-                block.ingested = True
-                block.revision_ids = [revisions[1]["revid"]]
-
-                if helpers.is_new_section_text(added_text):
-                    behavior.append("create_section")
-                    curr_section_hash = hashed_text
-                    # print("III. CURR SECTION HASH NOW:", curr_section_hash)
-                    block.reply_chain = [hashed_text]
-                    block.is_header = True
-                else:
-                    behavior.append("add_comment")
-                    block_depth = helpers.compute_text_depth(added_text)
-                    if last_block_was_ingested:     # implies this block's author wrote a block before this one
-                        block.reply_chain = \
-                            accum.blocks[last_hash].reply_chain.copy()
-                        block.reply_chain.append(hashed_text)
-                        accum.blocks[last_hash].is_followed = True
+                if helpers.is_moved_right_tr(all_td):
+                    # is a block being moved
+                    behavior.append("move")
+                    lhs_paragraph = all_td[1].a["href"][1:]
+                    old_text = str(
+                        soup.find("a", {"name": lhs_paragraph}).parent.get_text())
+                    old_hash = helpers.compute_md5(old_text)
+                    if old_hash in accum.blocks:
+                        # someone moves comment that has been seen
+                        # kind of treated like modification of block if text has changed
+                        # cannot assume same conversation, so change root hash too
+                        block = accum.blocks.pop(old_hash)
+                        if old_hash != hashed_text:                     # text has changed and moved
+                            block.text = added_text                     # in this case updating text and author
+                            block.user = revisions[1].get("user", "userhidden")
+                        block.timestamp = revisions[1]["timestamp"]
+                        block.revision_ids.append(revisions[1]["revid"])
+                        block.root_hash = curr_section_hash
+                        accum.hash_lookup[old_hash] = hashed_text       # does nothing if text hasn't changed
                     else:
-                        reply_to_hash = accum.compute_reply_hash(
-                            last_hash, last_depth, block_depth)
-                        if reply_to_hash is not None:
-                            block.reply_chain = \
-                                accum.blocks[reply_to_hash].reply_chain.copy()
-                            block.reply_chain.append(hashed_text)
-                        else:
-                            block.reply_chain = [hashed_text]
-                    block.is_header = False
+                        # someone moves comment that hasn't been seen
+                        # treated like modification of block that hasn't been seen
+                        block.text = added_text
+                        block.timestamp = revisions[1]["timestamp"]
+                        block.user = revisions[1].get("user", "userhidden")
+                        block.ingested = False
+                        block.revision_ids = ["unknown", revisions[1]["revid"]]
+                        block.reply_chain = [hashed_text]
+                        block.root_hash = curr_section_hash
+                else:
+                    # is truly a new block
+                    block.text = added_text
+                    block.timestamp = revisions[1]["timestamp"]
+                    block.user = revisions[1].get("user", "userhidden")
+                    block.ingested = True
+                    block.revision_ids = [revisions[1]["revid"]]
 
-                block.root_hash = curr_section_hash
-                # print("THIS IS A ROOT HASH FOR ADDED BLOCK", curr_section_hash, block.root_hash)
+                    if helpers.is_new_section_text(added_text):
+                        behavior.append("create_section")
+                        curr_section_hash = hashed_text
+                        block.reply_chain = [hashed_text]
+                        block.is_header = True
+                    else:
+                        behavior.append("add_comment")
+                        block_depth = helpers.compute_text_depth(added_text)
+                        if last_block_was_ingested:     # implies this block's author wrote a block before this one
+                            block.reply_chain = \
+                                accum.blocks[last_hash].reply_chain.copy()
+                            block.reply_chain.append(hashed_text)
+                            accum.blocks[last_hash].is_followed = True
+                        else:
+                            reply_to_hash = accum.compute_reply_hash(
+                                last_hash, last_depth, block_depth)
+                            if reply_to_hash is not None:
+                                block.reply_chain = \
+                                    accum.blocks[reply_to_hash].reply_chain.copy()
+                                block.reply_chain.append(hashed_text)
+                            else:
+                                block.reply_chain = [hashed_text]
+                        block.is_header = False
+                    block.root_hash = curr_section_hash
+                
                 accum.blocks[hashed_text] = block
                 accum.hash_lookup[hashed_text] = hashed_text
                 last_hash = hashed_text
@@ -409,16 +440,19 @@ def _parse_diff(revisions: list, diff: dict, accum: Intermediate) -> Intermediat
             removed_text = str(all_td[1].get_text())
             if len(removed_text) > 0:
                 hashed_removal = helpers.compute_md5(removed_text)
-                try:
-                    del accum.blocks[hashed_removal]
-                    del accum.hash_lookup[hashed_removal]
-                except KeyError:
-                    pass
+                # dont remove if it was just a move
+                if helpers.is_moved_left_tr(all_td):
+                    behavior.append("removal")
+                else:
+                    try:
+                        del accum.hash_lookup[hashed_removal]
+                        del accum.blocks[hashed_removal]
+                    except KeyError:
+                        pass
 
         elif helpers.is_modification_tr(all_td):
             old_text = str(all_td[1].get_text())
             old_hash = helpers.compute_md5(old_text)
-
             new_text = str(all_td[3].get_text())
             new_hash = helpers.compute_md5(new_text)
             behavior.append("modify")
@@ -437,7 +471,6 @@ def _parse_diff(revisions: list, diff: dict, accum: Intermediate) -> Intermediat
             else:
                 # someone edits comment that hasn't been seen
                 # assert(old_hash not in accum.hash_lookup) # NOTE: look into further. Python seems to mess this up
-                block = Block()
                 block.text = new_text
                 block.timestamp = revisions[1]["timestamp"]
                 block.user = revisions[1].get("user", "userhidden")
@@ -445,14 +478,11 @@ def _parse_diff(revisions: list, diff: dict, accum: Intermediate) -> Intermediat
                 block.revision_ids = ["unknown", revisions[1]["revid"]]
                 block.reply_chain = [new_hash]
                 block.root_hash = curr_section_hash
-                # print("THIS IS A ROOT HASH FOR MODIFIED BLOCK", curr_section_hash, block.root_hash)
                 accum.blocks[new_hash] = block
                 accum.hash_lookup[new_hash] = new_hash
         elif not helpers.is_line_number_tr(all_td):
             print(all_td)
             raise Exception("block has unknown behavior")
-
-        print("RH", block.root_hash)
 
     accum.revisions.append((revisions[1]["revid"], behavior))
 

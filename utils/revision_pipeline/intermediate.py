@@ -141,7 +141,7 @@ class Intermediate:
     def segment_contiguous_blocks(self, reply_chain: list) -> list:
         """Turns a reply chain into a list of sublists, where each sublist contains
         the blocks that form a single utterance (given by the fact that it is a 
-        continuous block of one text by one author that is not the conversation's title).
+        continuous block of one text by one author).
 
         Ex: the block given by hash "abcd" is a full comment/utterance, and 
         the blocks given by "efgh", "ijkl" are two paragraphs of the same comment/utterance:
@@ -168,14 +168,10 @@ class Intermediate:
         res = []
         last_user = self.blocks[last_h].user
         contig = [last_h]
-
-        # print("last: ", self.blocks[last_h].root_hash)
         for h in reply_chain[i+1:]:
             this_h = self.find_ultimate_hash(h)
-
             if this_h is None:
                 continue
-            # print("this: ", self.blocks[this_h].root_hash)
             this_user = self.blocks[this_h].user
             if this_user == last_user and not self.blocks[last_h].is_header:
                 contig.append(this_h)
@@ -204,6 +200,7 @@ class Intermediate:
             block["reply_chain"] = b.reply_chain
             block["is_followed"] = b.is_followed
             block["is_header"] = b.is_header
+            block["root_hash"] = b.root_hash
             res[h] = block
         return res
 
@@ -226,5 +223,6 @@ class Intermediate:
             block.reply_chain = b["reply_chain"]
             block.is_followed = b["is_followed"]
             block.is_header = b["is_header"]
+            block.root_hash = b["root_hash"]
             res[h] = block
         return res

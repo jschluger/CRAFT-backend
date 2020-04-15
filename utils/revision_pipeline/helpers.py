@@ -54,6 +54,16 @@ def is_line_number_tr(all_td: list) -> bool:
     return (len(all_td) == 2 and all_td[0]["class"][0] == "diff-lineno" and all_td[1]["class"][0] == "diff-lineno")
 
 
+def is_moved_right_tr(all_td: list) -> bool:
+    """Returns whether the list of <td> elements in all_td describes the movement of a block to that position from one revision to the next."""
+    return (len(all_td) == 3 and all_td[1].a and all_td[1].a["class"][0] == "mw-diff-movedpara-right")
+
+
+def is_moved_left_tr(all_td: list) -> bool:
+    """Returns whether the list of <td> elements in all_td describes the movement of a block from that position from one revision to the next."""
+    return (len(all_td) == 3 and all_td[0].a and all_td[0].a["class"][0] == "mw-diff-movedpara-left")
+
+
 def string_of_seg(seg: list) -> str:
     """Returns a string formed from the list of segment hashes seg."""
     return ' '.join(seg)

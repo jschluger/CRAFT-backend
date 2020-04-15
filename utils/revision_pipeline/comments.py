@@ -66,11 +66,10 @@ class CommentCorpus:
 
             u_id = block_hashes[0]
             u_user = first_block.user
-            u_root = belongs_to_segment[0][0]
+            u_root = accum.find_ultimate_hash(first_block.root_hash)
             u_replyto = self._find_reply_to_from_segment(belongs_to_segment)
             u_timestamp = first_block.timestamp
             u_text = "\n".join([accum.blocks[h].text for h in block_hashes])
-
             this_comment = Comment(u_id, u_text, u_user,
                                    title, u_timestamp, u_replyto, u_root)
             self.comment_lookup[u_id] = this_comment

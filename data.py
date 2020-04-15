@@ -24,7 +24,7 @@ update_cron = {'minute': '*/5'}
 ##############################################################
 WIKI_CORPUS = None
 WIKI_COMMENTS = {}
-WIKI_TOPICS = ["Punk", "Guy_Fieri", "Almond", "Boeing"]
+WIKI_TOPICS = ["Punk", "Guy_Fieri", "Conversation"]
 WIKI_RECEIVED = []
 
 CORPUS = None

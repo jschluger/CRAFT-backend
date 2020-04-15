@@ -132,12 +132,18 @@ def wiki_viewtop():
     ranking = []
     for i in ids:
         utt = data.WIKI_CORPUS.get_utterance(i)
-        root = data.WIKI_CORPUS.get_utterance(utt.root)
+        if utt.root:
+            root = data.WIKI_CORPUS.get_utterance(utt.root)
+            convo_name = utt.meta["page"] + ": " + root.text.strip("=")
+        else:
+            i = utt.text[16:].find(" ")
+            conv_name = utt.meta["page"] + ": " + utt.text[16+i:] + "..."
+
         item = {'score': safe_score(utt),
                  'id': i,
                  'delta': utt.meta.get("delta", 0),
                  'n_comments': -1,
-                 'convo_name': utt.meta['page'] + ": " + root.text.replace("#", ""),
+                 'convo_name': convo_name,
                  'n_new_comments': 0,
                  'has_derailed': 0,
                  'still_active': 0
