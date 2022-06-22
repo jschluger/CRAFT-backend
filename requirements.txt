@@ -3,7 +3,7 @@ convokit==2.3.0.3
 Flask==1.1.1
 Jinja2==2.10.1
 nltk==3.4.5
-numpy==1.17.3
+numpy==1.22.0
 pandas==0.25.1
 pickleshare==0.7.5
 praw==6.4.0
